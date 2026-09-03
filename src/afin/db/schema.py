@@ -132,6 +132,11 @@ audit_events = Table(
     # A concise, structured justification. Never chain-of-thought.
     Column("reasoning_summary", Text, nullable=True),
     Column("confidence", Float, nullable=True),
+    # The model's structured answer, verbatim as parsed. This is the JSON the
+    # schema asked for -- NOT chain-of-thought. Providers that return a separate
+    # `reasoning_content` field (nemotron, muse-glimmer) have it read from
+    # nowhere and stored nowhere.
+    Column("raw_proposal_json", Text, nullable=True),
     Column("policy_decision", String(24), nullable=True),
     Column("policy_rule", String(48), nullable=True),
     Column("policy_reason", Text, nullable=True),

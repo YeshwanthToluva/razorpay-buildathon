@@ -40,6 +40,7 @@ class LLMReasoner:
         self.model = profile.model
         self.name = f"llm:{profile.describe()}"
         self.temperature = temperature
+        self.reasoning_effort = profile.reasoning_effort
         if profile.api_style == "responses":
             client_cls, self._options_cls = OpenAIChatClient, OpenAIChatOptions
         else:
@@ -100,7 +101,12 @@ class LLMReasoner:
             response = await self._client.get_response(
                 messages,
                 options=self._options_cls(
-                    response_format=AgentProposal, temperature=self.temperature
+                    response_format=AgentProposal,
+                    temperature=self.temperature,
+                    # Options are a plain dict, so this reaches the request body
+                    # and is honoured by providers that read it; the rest ignore
+                    # it harmlessly.
+                    reasoning_effort=self.reasoning_effort,
                 ),
             )
         except ValidationError as exc:

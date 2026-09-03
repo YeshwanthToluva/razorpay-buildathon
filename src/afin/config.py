@@ -43,6 +43,11 @@ class LLMProfile:
     #: targets the Responses API, which many OpenAI-compatible gateways do not
     #: serve; chat completions is the portable default.
     api_style: str = "chat_completions"
+    #: Reasoning budget for models that expose one. Low by default: choosing a
+    #: recovery action is a small structured decision, and higher effort buys
+    #: latency across 50 payments rather than better action selection. It is a
+    #: profile setting, and recorded on the run, so it can be varied on purpose.
+    reasoning_effort: str = "low"
 
     def describe(self) -> str:
         return f"{self.name}:{self.model}"
@@ -76,6 +81,7 @@ class Settings:
         base_url = os.environ.get(prefix + "BASE_URL", "")
         model = os.environ.get(prefix + "MODEL", "")
         api_style = os.environ.get(prefix + "API_STYLE", "chat_completions")
+        reasoning_effort = os.environ.get(prefix + "REASONING_EFFORT", "low")
         if not (api_key and model):
             raise UnknownProfile(
                 f"LLM profile {name!r} is not configured; expected "
@@ -88,4 +94,5 @@ class Settings:
             base_url=base_url,
             model=model,
             api_style=api_style,
+            reasoning_effort=reasoning_effort,
         )

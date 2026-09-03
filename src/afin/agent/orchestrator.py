@@ -104,6 +104,7 @@ class Orchestrator:
                 proposed_action=proposal.action_label,
                 reasoning_summary=proposal.reasoning_summary,
                 confidence=proposal.confidence,
+                raw_proposal_json=proposal.raw_json,
                 timestamp=self.now,
             )
 

@@ -110,6 +110,8 @@ class ProposedAction:
     confidence: float
     scheduled_delay_hours: int | None = None
     channel: Channel | None = None
+    #: The reasoner's structured answer as JSON, kept for the audit record.
+    raw_json: str | None = None
 
     @property
     def action_type(self) -> ActionType | None:

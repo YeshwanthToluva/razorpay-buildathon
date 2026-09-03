@@ -67,7 +67,13 @@ async def run_experiment(
         autonomy_level=0 if arm == "baseline" else 2,
         reasoner=reasoner.name,
         model=reasoner.model,
-        model_config_json=json.dumps({"temperature": getattr(reasoner, "temperature", None)}),
+        model_config_json=json.dumps(
+            {
+                "temperature": getattr(reasoner, "temperature", None),
+                "reasoning_effort": getattr(reasoner, "reasoning_effort", None),
+                "api_style": getattr(getattr(reasoner, "profile", None), "api_style", None),
+            }
+        ),
         prompt_version=prompt_version,
         policy_version=config.version,
         policy_fingerprint=config.fingerprint(),

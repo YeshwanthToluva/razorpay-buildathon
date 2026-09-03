@@ -51,6 +51,7 @@ class AgentProposal(BaseModel):
             confidence=float(self.confidence),
             scheduled_delay_hours=self.scheduled_delay_hours,
             channel=channel,
+            raw_json=self.model_dump_json(),
         )
 
 
