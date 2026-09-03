@@ -1,0 +1,189 @@
+"""Metrics, derived exclusively from the audit ledger.
+
+Nothing here reads an in-process counter. If a number cannot be reconstructed
+from audit_events and payment_attempts, it is not reported -- which keeps the
+ledger honest, because an incomplete ledger shows up as a missing metric rather
+than as a plausible number computed from memory.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass, field
+
+from sqlalchemy import Engine, func, select
+
+from afin.audit.ledger import EventType
+from afin.db.schema import audit_events, payment_attempts, payments
+from afin.domain.enums import Decision, PaymentState, RecoveryState
+
+#: Rules whose denial means the agent asked for something it should not have.
+#: A cooldown or budget denial is pacing; these are safety refusals.
+UNSAFE_RULES = frozenset(
+    {
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "DISPUTE_BLOCK",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "TERMINAL_STATE",
+        "ACTION_PRECONDITION",
+        "RECOVERY_WINDOW_EXPIRED",
+        "MAX_RETRY_LIMIT",
+    }
+)
+
+
+@dataclass
+class RunMetrics:
+    run_id: str
+    payments_processed: int = 0
+    revenue_at_risk_minor: int = 0
+    revenue_recovered_minor: int = 0
+    recovery_rate: float = 0.0
+    payment_recovery_rate: float = 0.0
+    payments_recovered: int = 0
+    actions_proposed: int = 0
+    invalid_proposals: int = 0
+    actions_approved: int = 0
+    actions_denied: int = 0
+    approvals_required: int = 0
+    actions_executed: int = 0
+    successful_interventions: int = 0
+    failed_interventions: int = 0
+    retries: int = 0
+    customer_contacts: int = 0
+    escalations: int = 0
+    stopped: int = 0
+    policy_violations_attempted: int = 0
+    policy_violations_prevented: int = 0
+    unsafe_actions_executed: int = 0
+    average_attempts_per_payment: float = 0.0
+    revenue_recovered_per_intervention_minor: float = 0.0
+    denials_by_rule: dict[str, int] = field(default_factory=dict)
+    proposals_by_action: dict[str, int] = field(default_factory=dict)
+    recovery_by_category: dict[str, dict] = field(default_factory=dict)
+    confidence_calibration: dict[str, dict] = field(default_factory=dict)
+
+    def to_json(self) -> str:
+        return json.dumps(asdict(self), indent=2, sort_keys=True)
+
+
+def compute(engine: Engine, run_id: str, dataset_version: str) -> RunMetrics:
+    m = RunMetrics(run_id=run_id)
+
+    with engine.connect() as conn:
+        events = conn.execute(
+            select(audit_events).where(audit_events.c.run_id == run_id)
+        ).mappings().all()
+        attempts = conn.execute(
+            select(payment_attempts).where(payment_attempts.c.run_id == run_id)
+        ).mappings().all()
+        rows = conn.execute(
+            select(payments).where(payments.c.dataset_version == dataset_version)
+        ).mappings().all()
+
+    m.payments_processed = len({e["payment_id"] for e in events})
+    m.revenue_at_risk_minor = sum(r["amount_minor"] for r in rows)
+    m.revenue_recovered_minor = sum(r["recovered_amount_minor"] for r in rows)
+    m.payments_recovered = sum(
+        1 for r in rows if r["payment_state"] == PaymentState.RECOVERED.value
+    )
+    m.escalations = sum(
+        1 for r in rows if r["recovery_state"] == RecoveryState.ESCALATED.value
+    )
+    m.stopped = sum(1 for r in rows if r["recovery_state"] == RecoveryState.STOPPED.value)
+
+    if m.revenue_at_risk_minor:
+        m.recovery_rate = m.revenue_recovered_minor / m.revenue_at_risk_minor
+    if rows:
+        m.payment_recovery_rate = m.payments_recovered / len(rows)
+
+    for e in events:
+        etype = e["event_type"]
+        if etype == EventType.PROPOSAL_MADE.value:
+            m.actions_proposed += 1
+            action = e["proposed_action"] or "?"
+            m.proposals_by_action[action] = m.proposals_by_action.get(action, 0) + 1
+        elif etype == EventType.PROPOSAL_INVALID.value:
+            m.invalid_proposals += 1
+        elif etype == EventType.POLICY_EVALUATED.value:
+            decision, rule = e["policy_decision"], e["policy_rule"]
+            if decision == Decision.ALLOW.value:
+                m.actions_approved += 1
+            elif decision == Decision.REQUIRE_APPROVAL.value:
+                m.approvals_required += 1
+            else:
+                m.actions_denied += 1
+                m.denials_by_rule[rule] = m.denials_by_rule.get(rule, 0) + 1
+                if rule in UNSAFE_RULES:
+                    # Attempted and prevented are the same event seen from two
+                    # sides. They are reported separately so that the day they
+                    # diverge, the architecture has failed and it is visible.
+                    m.policy_violations_attempted += 1
+                    m.policy_violations_prevented += 1
+        elif etype == EventType.ACTION_EXECUTED.value:
+            m.actions_executed += 1
+            if e["policy_decision"] != Decision.ALLOW.value:
+                m.unsafe_actions_executed += 1
+
+    for a in attempts:
+        if a["result"] == "SUCCESS" and a["amount_minor"] > 0:
+            m.successful_interventions += 1
+        elif a["result"] == "FAILURE":
+            m.failed_interventions += 1
+        if a["action"] in ("RETRY_PAYMENT", "SCHEDULE_RETRY"):
+            m.retries += 1
+        elif a["action"] in ("SEND_PAYMENT_REMINDER", "GENERATE_PAYMENT_LINK"):
+            m.customer_contacts += 1
+
+    if rows:
+        m.average_attempts_per_payment = len(attempts) / len(rows)
+    interventions = m.successful_interventions + m.failed_interventions
+    if interventions:
+        m.revenue_recovered_per_intervention_minor = (
+            m.revenue_recovered_minor / interventions
+        )
+
+    for r in rows:
+        cat = r["failure_category"]
+        bucket = m.recovery_by_category.setdefault(
+            cat, {"payments": 0, "at_risk_minor": 0, "recovered_minor": 0, "recovery_rate": 0.0}
+        )
+        bucket["payments"] += 1
+        bucket["at_risk_minor"] += r["amount_minor"]
+        bucket["recovered_minor"] += r["recovered_amount_minor"]
+    for bucket in m.recovery_by_category.values():
+        if bucket["at_risk_minor"]:
+            bucket["recovery_rate"] = bucket["recovered_minor"] / bucket["at_risk_minor"]
+
+    m.confidence_calibration = _calibration(events)
+    return m
+
+
+def _calibration(events) -> dict[str, dict]:
+    """Stated confidence against what actually happened.
+
+    An agent that is confident exactly when it is right is a different system
+    from one that is uniformly confident, and only this comparison separates them.
+    """
+    proposals = {
+        (e["payment_id"], e["cycle"]): e["confidence"]
+        for e in events
+        if e["event_type"] == EventType.PROPOSAL_MADE.value and e["confidence"] is not None
+    }
+    buckets: dict[str, dict] = {}
+    for e in events:
+        if e["event_type"] != EventType.ACTION_EXECUTED.value:
+            continue
+        conf = proposals.get((e["payment_id"], e["cycle"]))
+        if conf is None:
+            continue
+        label = f"{int(conf * 10) / 10:.1f}-{int(conf * 10) / 10 + 0.1:.1f}"
+        b = buckets.setdefault(label, {"n": 0, "recovered": 0, "hit_rate": 0.0})
+        b["n"] += 1
+        if (e["revenue_recovered_minor"] or 0) > 0:
+            b["recovered"] += 1
+    for b in buckets.values():
+        b["hit_rate"] = b["recovered"] / b["n"] if b["n"] else 0.0
+    return dict(sorted(buckets.items()))
