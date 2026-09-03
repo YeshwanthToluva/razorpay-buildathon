@@ -25,6 +25,7 @@ from afin.audit.ledger import AuditLedger
 from afin.db.engine import create_schema, get_engine
 from afin.db.repository import load_cases
 from afin.db.seed import DATASET_VERSION, DEFAULT_SEED, EPOCH, generate, load_into
+from afin.metrics.exporter import write as write_prometheus
 from afin.metrics.recovery import compute
 from afin.policy.config import DEFAULT_POLICY_CONFIG, PolicyConfig
 from afin.simulator.razorpay_sim import RazorpaySimulator
@@ -107,6 +108,7 @@ async def run_experiment(
     out_dir = pathlib.Path(__file__).resolve().parents[3] / "data" / "runs"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / f"{run_id}.json").write_text(metrics.to_json())
+    write_prometheus(metrics, out_dir / f"{run_id}.prom")
 
     return run_id, metrics
 
