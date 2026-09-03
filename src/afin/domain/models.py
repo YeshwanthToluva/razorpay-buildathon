@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from afin.domain.enums import (
+    ActionType,
     Channel,
     CustomerRiskFlag,
     ExecutionResult,
@@ -88,3 +89,39 @@ class ProviderOutcome:
     failure_code: str | None
     provider_ref: str | None
     detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProposedAction:
+    """A structured proposal from the agent. Data only — proposing is not doing.
+
+    `action` is deliberately typed to admit a plain string. If the agent invents
+    an action outside the closed space, that string must survive schema
+    validation and reach the policy engine so the engine can deny it as
+    UNSUPPORTED_ACTION and the ledger can record the proposal. Coercing it to a
+    valid action, or rejecting it at the schema layer, would erase exactly the
+    experimental observation we are trying to measure.
+    """
+
+    action: ActionType | str
+    payment_id: str
+    diagnosis: str
+    reasoning_summary: str
+    confidence: float
+    scheduled_delay_hours: int | None = None
+    channel: Channel | None = None
+
+    @property
+    def action_type(self) -> ActionType | None:
+        """The action as a domain enum, or None if the agent invented one."""
+        if isinstance(self.action, ActionType):
+            return self.action
+        try:
+            return ActionType(self.action)
+        except ValueError:
+            return None
+
+    @property
+    def action_label(self) -> str:
+        """Human/audit-facing name, valid or not."""
+        return self.action.value if isinstance(self.action, ActionType) else str(self.action)
