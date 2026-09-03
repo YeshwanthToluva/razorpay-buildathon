@@ -125,7 +125,10 @@ audit_events = Table(
     Column("event_type", String(48), nullable=False),
     Column("observed_state_json", Text, nullable=False),
     Column("agent_diagnosis", Text, nullable=True),
-    Column("proposed_action", String(64), nullable=True),
+    # Text, not a bounded string: an invented "action" may be arbitrary prose,
+    # and the whole point of letting it reach the ledger is that it gets
+    # recorded. executed_action stays bounded -- only real actions execute.
+    Column("proposed_action", Text, nullable=True),
     # A concise, structured justification. Never chain-of-thought.
     Column("reasoning_summary", Text, nullable=True),
     Column("confidence", Float, nullable=True),

@@ -16,6 +16,7 @@ from datetime import datetime
 from typing import Sequence
 
 from agent_framework import Message
+from pydantic import ValidationError
 from agent_framework.openai import (
     OpenAIChatClient,
     OpenAIChatCompletionClient,
@@ -95,12 +96,21 @@ class LLMReasoner:
                 "Propose a different action, or STOP_RECOVERY if no route remains.\n"
             )
         messages = [Message("system", SYSTEM_PROMPT), Message("user", prompt)]
-        response = await self._client.get_response(
-            messages,
-            options=self._options_cls(
-                response_format=AgentProposal, temperature=self.temperature
-            ),
-        )
+        try:
+            response = await self._client.get_response(
+                messages,
+                options=self._options_cls(
+                    response_format=AgentProposal, temperature=self.temperature
+                ),
+            )
+        except ValidationError as exc:
+            # Some providers ignore the schema and return prose. That is a
+            # malformed proposal, not an infrastructure fault, and belongs in
+            # the ledger as PROPOSAL_INVALID so the model can be held to account
+            # for it in the metrics.
+            raise InvalidProposal(
+                f"provider returned output that is not a valid proposal: {exc.error_count()} error(s)"
+            ) from exc
 
         # Some providers return a `reasoning_content` field carrying raw
         # chain-of-thought. It is read from nowhere and stored nowhere: only the

@@ -51,7 +51,14 @@ class AuditLedger:
     engine: Engine
     run_id: str
 
+    #: A pathological model can emit an unbounded "action". It must be recorded,
+    #: but it must not be able to bloat the ledger either.
+    MAX_ACTION_CHARS = 512
+
     def record(self, **fields) -> None:
+        proposed = fields.get("proposed_action")
+        if isinstance(proposed, str) and len(proposed) > self.MAX_ACTION_CHARS:
+            fields["proposed_action"] = proposed[: self.MAX_ACTION_CHARS] + "...[truncated]"
         payload = {
             "run_id": self.run_id,
             "timestamp": fields.pop("timestamp", datetime.now(timezone.utc)),
