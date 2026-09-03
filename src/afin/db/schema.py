@@ -1,0 +1,150 @@
+"""Database schema.
+
+Money is BIGINT minor units throughout. `audit_events` is append-only, enforced
+by database triggers rather than convention: an audit ledger that application
+code can quietly rewrite is not an audit ledger.
+"""
+
+from __future__ import annotations
+
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
+)
+
+metadata = MetaData()
+
+datasets = Table(
+    "datasets",
+    metadata,
+    Column("dataset_version", String(64), primary_key=True),
+    Column("seed", Integer, nullable=False),
+    Column("generated_at", DateTime(timezone=True), nullable=False),
+    Column("manifest_sha256", String(64), nullable=False),
+    Column("payment_count", Integer, nullable=False),
+)
+
+customers = Table(
+    "customers",
+    metadata,
+    Column("id", String(32), primary_key=True),
+    Column("dataset_version", String(64), ForeignKey("datasets.dataset_version"), nullable=False),
+    Column("segment", String(32), nullable=False),
+    Column("opted_out", Boolean, nullable=False, default=False),
+    Column("preferred_channel", String(16), nullable=False),
+    Column("lifetime_payments", Integer, nullable=False),
+    Column("lifetime_failures", Integer, nullable=False),
+    Column("prior_successful_payments", Integer, nullable=False),
+    Column("risk_flag", String(32), nullable=False),
+)
+
+payments = Table(
+    "payments",
+    metadata,
+    Column("id", String(32), primary_key=True),
+    Column("dataset_version", String(64), ForeignKey("datasets.dataset_version"), nullable=False),
+    Column("customer_id", String(32), ForeignKey("customers.id"), nullable=False),
+    Column("invoice_id", String(32), nullable=False),
+    Column("amount_minor", BigInteger, nullable=False),
+    Column("currency", String(3), nullable=False),
+    Column("payment_state", String(32), nullable=False),
+    Column("recovery_state", String(32), nullable=False),
+    Column("failure_category", String(32), nullable=False),
+    Column("failure_code", String(64), nullable=False),
+    Column("retry_count", Integer, nullable=False, default=0),
+    Column("contact_count", Integer, nullable=False, default=0),
+    Column("is_disputed", Boolean, nullable=False, default=False),
+    Column("failed_at", DateTime(timezone=True), nullable=False),
+    Column("window_expires_at", DateTime(timezone=True), nullable=False),
+    Column("last_attempt_at", DateTime(timezone=True), nullable=True),
+    Column("recovered_amount_minor", BigInteger, nullable=False, default=0),
+    Column("scenario_tag", String(64), nullable=False),
+)
+
+runs = Table(
+    "runs",
+    metadata,
+    Column("run_id", String(64), primary_key=True),
+    Column("started_at", DateTime(timezone=True), nullable=False),
+    Column("finished_at", DateTime(timezone=True), nullable=True),
+    Column("experiment", String(64), nullable=False),
+    Column("autonomy_level", Integer, nullable=False),
+    Column("reasoner", String(64), nullable=False),
+    Column("model", String(64), nullable=True),
+    Column("model_config_json", Text, nullable=True),
+    Column("prompt_version", String(32), nullable=True),
+    Column("policy_version", String(32), nullable=False),
+    Column("policy_fingerprint", String(32), nullable=False),
+    Column("dataset_version", String(64), nullable=False),
+    Column("random_seed", Integer, nullable=False),
+    Column("notes", Text, nullable=True),
+)
+
+payment_attempts = Table(
+    "payment_attempts",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("run_id", String(64), nullable=False),
+    Column("payment_id", String(32), nullable=False),
+    Column("cycle", Integer, nullable=False),
+    Column("action", String(32), nullable=False),
+    Column("provider_ref", String(64), nullable=True),
+    Column("result", String(16), nullable=False),
+    Column("failure_code", String(64), nullable=True),
+    Column("amount_minor", BigInteger, nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+)
+
+audit_events = Table(
+    "audit_events",
+    metadata,
+    Column("seq", BigInteger, primary_key=True, autoincrement=True),
+    Column("run_id", String(64), nullable=False),
+    Column("payment_id", String(32), nullable=False),
+    Column("cycle", Integer, nullable=False),
+    Column("timestamp", DateTime(timezone=True), nullable=False),
+    Column("event_type", String(48), nullable=False),
+    Column("observed_state_json", Text, nullable=False),
+    Column("agent_diagnosis", Text, nullable=True),
+    Column("proposed_action", String(64), nullable=True),
+    # A concise, structured justification. Never chain-of-thought.
+    Column("reasoning_summary", Text, nullable=True),
+    Column("confidence", Float, nullable=True),
+    Column("policy_decision", String(24), nullable=True),
+    Column("policy_rule", String(48), nullable=True),
+    Column("policy_reason", Text, nullable=True),
+    Column("risk_level", String(16), nullable=True),
+    Column("executed_action", String(32), nullable=True),
+    Column("execution_result", String(16), nullable=True),
+    Column("revenue_recovered_minor", BigInteger, nullable=False, default=0),
+    Column("resulting_payment_state", String(32), nullable=True),
+    Column("resulting_recovery_state", String(32), nullable=True),
+    Column("final_state", String(32), nullable=True),
+    Column("error", Text, nullable=True),
+)
+
+#: Append-only enforcement. Applied after create_all.
+APPEND_ONLY_DDL = """
+CREATE OR REPLACE FUNCTION afin_audit_append_only() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'audit_events is append-only (attempted %)', TG_OP;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS audit_no_update ON audit_events;
+CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_events
+    FOR EACH ROW EXECUTE FUNCTION afin_audit_append_only();
+
+DROP TRIGGER IF EXISTS audit_no_delete ON audit_events;
+CREATE TRIGGER audit_no_delete BEFORE DELETE ON audit_events
+    FOR EACH ROW EXECUTE FUNCTION afin_audit_append_only();
+"""
