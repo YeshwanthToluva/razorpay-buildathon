@@ -12,6 +12,8 @@ It cannot execute anything, because it holds nothing executable.
 
 from __future__ import annotations
 
+import asyncio
+import random
 from datetime import datetime
 from typing import Sequence
 
@@ -41,6 +43,8 @@ class LLMReasoner:
         self.name = f"llm:{profile.describe()}"
         self.temperature = temperature
         self.reasoning_effort = profile.reasoning_effort
+        #: Transient provider faults absorbed by _request during this run.
+        self.retries = 0
         if profile.api_style == "responses":
             client_cls, self._options_cls = OpenAIChatClient, OpenAIChatOptions
         else:
@@ -81,6 +85,56 @@ class LLMReasoner:
             risk_flag=customer.risk_flag,
         )
 
+    #: Provider faults worth retrying: rate limits and transient server errors.
+    #: A schema violation is deliberately NOT here -- that is the model's actual
+    #: answer, and resampling it would quietly retry until the model looked
+    #: better than it is, corrupting the invalid-proposal metric.
+    RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+    MAX_ATTEMPTS = 6
+
+    @staticmethod
+    def _status_of(exc: Exception) -> int | None:
+        for candidate in (exc, getattr(exc, "__cause__", None)):
+            code = getattr(candidate, "status_code", None)
+            if isinstance(code, int):
+                return code
+        text = str(exc)
+        for code in (429, 503, 502, 500, 504, 408):
+            if f"Error code: {code}" in text or f"'status': {code}" in text:
+                return code
+        return None
+
+    async def _request(self, messages):
+        """Call the provider, retrying transient faults with backoff.
+
+        Without this a free-tier rate limit turns an experiment into noise: a
+        run in which 40 of 50 cases errored still reports a recovery rate, and
+        that number reads like a finding rather than an outage.
+        """
+        last: Exception | None = None
+        for attempt in range(self.MAX_ATTEMPTS):
+            try:
+                return await self._client.get_response(
+                    messages,
+                    options=self._options_cls(
+                        response_format=AgentProposal,
+                        temperature=self.temperature,
+                        # Options are a plain dict, so this reaches the request
+                        # body for providers that read it; others ignore it.
+                        reasoning_effort=self.reasoning_effort,
+                    ),
+                )
+            except ValidationError:
+                raise
+            except Exception as exc:  # noqa: BLE001
+                status = self._status_of(exc)
+                if status not in self.RETRYABLE_STATUS or attempt == self.MAX_ATTEMPTS - 1:
+                    raise
+                last = exc
+                self.retries += 1
+                await asyncio.sleep(min(2.0 ** attempt, 30.0) + random.uniform(0, 1.5))
+        raise last if last else RuntimeError("unreachable")
+
     async def propose(
         self,
         payment: PaymentSnapshot,
@@ -98,17 +152,7 @@ class LLMReasoner:
             )
         messages = [Message("system", SYSTEM_PROMPT), Message("user", prompt)]
         try:
-            response = await self._client.get_response(
-                messages,
-                options=self._options_cls(
-                    response_format=AgentProposal,
-                    temperature=self.temperature,
-                    # Options are a plain dict, so this reaches the request body
-                    # and is honoured by providers that read it; the rest ignore
-                    # it harmlessly.
-                    reasoning_effort=self.reasoning_effort,
-                ),
-            )
+            response = await self._request(messages)
         except ValidationError as exc:
             # Some providers ignore the schema and return prose. That is a
             # malformed proposal, not an infrastructure fault, and belongs in

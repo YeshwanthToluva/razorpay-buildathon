@@ -45,6 +45,8 @@ class RunMetrics:
     payments_recovered: int = 0
     actions_proposed: int = 0
     invalid_proposals: int = 0
+    #: Cases where the provider could not be reached at all.
+    agent_errors: int = 0
     actions_approved: int = 0
     actions_denied: int = 0
     approvals_required: int = 0
@@ -107,6 +109,8 @@ def compute(engine: Engine, run_id: str, dataset_version: str) -> RunMetrics:
             m.proposals_by_action[action] = m.proposals_by_action.get(action, 0) + 1
         elif etype == EventType.PROPOSAL_INVALID.value:
             m.invalid_proposals += 1
+        elif etype == EventType.AGENT_ERROR.value:
+            m.agent_errors += 1
         elif etype == EventType.POLICY_EVALUATED.value:
             decision, rule = e["policy_decision"], e["policy_rule"]
             if decision == Decision.ALLOW.value:
@@ -159,6 +163,24 @@ def compute(engine: Engine, run_id: str, dataset_version: str) -> RunMetrics:
 
     m.confidence_calibration = _calibration(events)
     return m
+
+
+def run_is_valid(m: RunMetrics, tolerance: float = 0.1) -> tuple[bool, str]:
+    """Whether a run's numbers mean anything.
+
+    A run where the provider was unreachable for most cases still produces a
+    recovery rate, and that number reads like a finding rather than an outage.
+    Runs that breach the tolerance are reported as invalid rather than compared.
+    """
+    if not m.payments_processed:
+        return False, "no payments were processed"
+    error_rate = m.agent_errors / m.payments_processed
+    if error_rate > tolerance:
+        return False, (
+            f"{m.agent_errors} of {m.payments_processed} cases failed to reach "
+            f"the model ({error_rate:.0%} > {tolerance:.0%} tolerance)"
+        )
+    return True, "ok"
 
 
 def _calibration(events) -> dict[str, dict]:

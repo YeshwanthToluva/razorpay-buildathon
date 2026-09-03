@@ -26,7 +26,7 @@ from afin.db.engine import create_schema, get_engine
 from afin.db.repository import load_cases
 from afin.db.seed import DATASET_VERSION, DEFAULT_SEED, EPOCH, generate, load_into
 from afin.metrics.exporter import write as write_prometheus
-from afin.metrics.recovery import compute
+from afin.metrics.recovery import compute, run_is_valid
 from afin.policy.config import DEFAULT_POLICY_CONFIG, PolicyConfig
 from afin.simulator.razorpay_sim import RazorpaySimulator
 
@@ -137,6 +137,7 @@ def report(metrics) -> str:
         "",
         f"  actions proposed            {m.actions_proposed}",
         f"  invalid proposals           {m.invalid_proposals}",
+        f"  provider errors             {m.agent_errors}",
         f"  approved                    {m.actions_approved}",
         f"  denied                      {m.actions_denied}",
         f"  approval required           {m.approvals_required}",
@@ -177,6 +178,15 @@ def report(metrics) -> str:
         lines += ["", "  confidence vs outcome"]
         for bucket, b in m.confidence_calibration.items():
             lines.append(f"    {bucket:<12} n={b['n']:<4} recovered={b['hit_rate']:.1%}")
+    valid, why = run_is_valid(m)
+    if not valid:
+        lines += [
+            "",
+            "  " + "!" * 62,
+            f"  RUN NOT VALID AS AN EXPERIMENT: {why}",
+            "  Numbers above describe an outage, not agent behaviour.",
+            "  " + "!" * 62,
+        ]
     lines.append("")
     return "\n".join(lines)
 
