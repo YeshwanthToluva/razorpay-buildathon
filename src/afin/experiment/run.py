@@ -33,17 +33,17 @@ from afin.simulator.razorpay_sim import RazorpaySimulator
 ARMS = ("baseline", "agent")
 
 
-def build_reasoner(arm: str):
+def build_reasoner(arm: str, profile: str):
     if arm == "baseline":
         return RuleBasedReasoner(), None
     from afin.agent.llm import LLMReasoner
 
-    r = LLMReasoner()
-    return r, PROMPT_VERSION
+    return LLMReasoner(profile=profile), PROMPT_VERSION
 
 
 async def run_experiment(
     arm: str = "agent",
+    profile: str = "gpt",
     seed: int = DEFAULT_SEED,
     reset: bool = True,
     config: PolicyConfig = DEFAULT_POLICY_CONFIG,
@@ -57,8 +57,9 @@ async def run_experiment(
         # Each arm starts from the identical dataset, so arms are comparable.
         load_into(engine, generate(seed=seed))
 
-    run_id = f"{arm}-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}-{uuid.uuid4().hex[:6]}"
-    reasoner, prompt_version = build_reasoner(arm)
+    tag = arm if arm == "baseline" else f"{arm}-{profile}"
+    run_id = f"{tag}-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}-{uuid.uuid4().hex[:6]}"
+    reasoner, prompt_version = build_reasoner(arm, profile)
     ledger = AuditLedger(engine=engine, run_id=run_id)
     ledger.open_run(
         started_at=datetime.now(timezone.utc),
@@ -177,6 +178,11 @@ def report(metrics) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run a recovery experiment.")
     parser.add_argument("--arm", choices=ARMS, default="agent")
+    parser.add_argument(
+        "--profile",
+        default="gpt",
+        help="LLM profile from .env (AFIN_LLM_PROFILES). Ignored for the baseline arm.",
+    )
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--no-reset", action="store_true")
@@ -184,7 +190,11 @@ def main() -> None:
 
     _, metrics = asyncio.run(
         run_experiment(
-            arm=args.arm, seed=args.seed, reset=not args.no_reset, limit=args.limit
+            arm=args.arm,
+            profile=args.profile,
+            seed=args.seed,
+            reset=not args.no_reset,
+            limit=args.limit,
         )
     )
     print(report(metrics))

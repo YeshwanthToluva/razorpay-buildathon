@@ -16,26 +16,36 @@ from datetime import datetime
 from typing import Sequence
 
 from agent_framework import Message
-from agent_framework.openai import OpenAIChatClient, OpenAIChatOptions
+from agent_framework.openai import (
+    OpenAIChatClient,
+    OpenAIChatCompletionClient,
+    OpenAIChatCompletionOptions,
+    OpenAIChatOptions,
+)
 
 from afin.agent.prompts import SYSTEM_PROMPT, USER_TEMPLATE
 from afin.agent.schema import AgentProposal, InvalidProposal, PROMPT_VERSION
-from afin.config import Settings
+from afin.config import LLMProfile, Settings
 from afin.domain.models import CustomerSnapshot, PaymentSnapshot, ProposedAction
 
 
 class LLMReasoner:
     prompt_version = PROMPT_VERSION
 
-    def __init__(self, settings: Settings | None = None, temperature: float = 0.0):
-        settings = settings or Settings.load()
-        self.model = settings.openai_model
-        self.name = f"llm:{self.model}"
+    def __init__(self, profile: LLMProfile | str = "gpt", temperature: float = 0.0):
+        if isinstance(profile, str):
+            profile = Settings.profile(profile)
+        self.profile = profile
+        self.model = profile.model
+        self.name = f"llm:{profile.describe()}"
         self.temperature = temperature
-        self._client = OpenAIChatClient(
-            settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
+        if profile.api_style == "responses":
+            client_cls, self._options_cls = OpenAIChatClient, OpenAIChatOptions
+        else:
+            client_cls = OpenAIChatCompletionClient
+            self._options_cls = OpenAIChatCompletionOptions
+        self._client = client_cls(
+            profile.model, api_key=profile.api_key, base_url=profile.base_url or None
         )
 
     def _render(
@@ -87,11 +97,14 @@ class LLMReasoner:
         messages = [Message("system", SYSTEM_PROMPT), Message("user", prompt)]
         response = await self._client.get_response(
             messages,
-            options=OpenAIChatOptions(
+            options=self._options_cls(
                 response_format=AgentProposal, temperature=self.temperature
             ),
         )
 
+        # Some providers return a `reasoning_content` field carrying raw
+        # chain-of-thought. It is read from nowhere and stored nowhere: only the
+        # parsed structured fields below ever leave this method.
         proposal = getattr(response, "value", None)
         if isinstance(proposal, AgentProposal):
             return proposal.to_domain(payment.id)
