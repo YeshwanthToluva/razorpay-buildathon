@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from sqlalchemy import (
     BigInteger,
+    ForeignKeyConstraint,
+    PrimaryKeyConstraint,
     Boolean,
     Column,
     DateTime,
@@ -36,7 +38,7 @@ datasets = Table(
 customers = Table(
     "customers",
     metadata,
-    Column("id", String(32), primary_key=True),
+    Column("id", String(32), nullable=False),
     Column("dataset_version", String(64), ForeignKey("datasets.dataset_version"), nullable=False),
     Column("segment", String(32), nullable=False),
     Column("opted_out", Boolean, nullable=False, default=False),
@@ -45,14 +47,17 @@ customers = Table(
     Column("lifetime_failures", Integer, nullable=False),
     Column("prior_successful_payments", Integer, nullable=False),
     Column("risk_flag", String(32), nullable=False),
+    # An id identifies a row only within its dataset: two dataset versions
+    # legitimately both contain cust_0001, and they are different customers.
+    PrimaryKeyConstraint("dataset_version", "id"),
 )
 
 payments = Table(
     "payments",
     metadata,
-    Column("id", String(32), primary_key=True),
+    Column("id", String(32), nullable=False),
     Column("dataset_version", String(64), ForeignKey("datasets.dataset_version"), nullable=False),
-    Column("customer_id", String(32), ForeignKey("customers.id"), nullable=False),
+    Column("customer_id", String(32), nullable=False),
     Column("invoice_id", String(32), nullable=False),
     Column("amount_minor", BigInteger, nullable=False),
     Column("currency", String(3), nullable=False),
@@ -68,6 +73,11 @@ payments = Table(
     Column("last_attempt_at", DateTime(timezone=True), nullable=True),
     Column("recovered_amount_minor", BigInteger, nullable=False, default=0),
     Column("scenario_tag", String(64), nullable=False),
+    PrimaryKeyConstraint("dataset_version", "id"),
+    ForeignKeyConstraint(
+        ["dataset_version", "customer_id"],
+        ["customers.dataset_version", "customers.id"],
+    ),
 )
 
 runs = Table(

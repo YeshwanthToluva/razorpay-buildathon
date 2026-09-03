@@ -76,11 +76,18 @@ def load_cases(
     return [(_to_payment(row), by_id[row.customer_id]) for row in payment_rows]
 
 
-def persist_payment(engine: Engine, payment: PaymentSnapshot) -> None:
-    """Write back a payment the reducer produced. Never called with agent output."""
+def persist_payment(
+    engine: Engine, payment: PaymentSnapshot, dataset_version: str
+) -> None:
+    """Write back a payment the reducer produced. Never called with agent output.
+
+    Scoped to a dataset version: an unscoped update by id would silently write
+    the same row in every dataset that happens to contain that id.
+    """
     stmt = (
         update(payments)
         .where(payments.c.id == payment.id)
+        .where(payments.c.dataset_version == dataset_version)
         .values(
             payment_state=payment.payment_state.value,
             recovery_state=payment.recovery_state.value,

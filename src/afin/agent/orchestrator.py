@@ -59,6 +59,7 @@ class Orchestrator:
     ledger: AuditLedger
     config: PolicyConfig
     now: datetime
+    dataset_version: str
     max_cycles: int = MAX_CYCLES
 
     async def run_case(
@@ -252,7 +253,7 @@ class Orchestrator:
         result.payment = after
         result.recovered_minor += outcome.amount_recovered_minor
 
-        persist_payment(self.engine, after)
+        persist_payment(self.engine, after, self.dataset_version)
 
         self.ledger.record_attempt(
             payment_id=before.id,
