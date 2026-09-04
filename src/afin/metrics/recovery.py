@@ -9,6 +9,7 @@ than as a plausible number computed from memory.
 from __future__ import annotations
 
 import json
+from enum import StrEnum
 from dataclasses import asdict, dataclass, field
 
 from sqlalchemy import Engine, func, select
@@ -47,6 +48,14 @@ class RunMetrics:
     invalid_proposals: int = 0
     #: Cases where the provider could not be reached at all.
     agent_errors: int = 0
+    # Context fidelity (experiment 002e): factual claims the model restated,
+    # checked against the payment record.
+    context_claims_total: int = 0
+    context_claims_supported: int = 0
+    context_claims_contradicted: int = 0
+    context_claims_missing: int = 0
+    context_fidelity_rate: float = 0.0
+    contradictions_by_field: dict[str, int] = field(default_factory=dict)
     actions_approved: int = 0
     actions_denied: int = 0
     approvals_required: int = 0
@@ -162,7 +171,65 @@ def compute(engine: Engine, run_id: str, dataset_version: str) -> RunMetrics:
             bucket["recovery_rate"] = bucket["recovered_minor"] / bucket["at_risk_minor"]
 
     m.confidence_calibration = _calibration(events)
+    _apply_context_fidelity(m, events)
     return m
+
+
+class ClaimVerdict(StrEnum):
+    SUPPORTED = "SUPPORTED"
+    CONTRADICTED = "CONTRADICTED"
+    MISSING = "MISSING"
+
+
+def classify_claim(claimed, actual) -> ClaimVerdict:
+    """Compare one restated fact against the record. Deterministic, no inference.
+
+    A claim the model declined to make is MISSING, not CONTRADICTED: silence is
+    not a false statement, and conflating the two would inflate the headline
+    contradiction count with mere omissions.
+    """
+    if claimed is None:
+        return ClaimVerdict.MISSING
+    return ClaimVerdict.SUPPORTED if claimed == actual else ClaimVerdict.CONTRADICTED
+
+
+#: Claim field on the proposal -> field on the observed state it must match.
+CHECKED_CLAIMS = {
+    "claimed_opted_out": ("customer", "opted_out"),
+    "claimed_prior_successful_payments": ("customer", "prior_successful_payments"),
+}
+
+
+def _apply_context_fidelity(m: RunMetrics, events) -> None:
+    """Score every proposal's restated facts against the state it was shown.
+
+    The comparison uses observed_state_json -- the snapshot actually given to the
+    model on that cycle -- rather than the payment's current row, so a claim is
+    judged against what the model could see, not against state a later cycle
+    changed.
+    """
+    for e in events:
+        if e["event_type"] != EventType.PROPOSAL_MADE.value:
+            continue
+        try:
+            observed = json.loads(e["observed_state_json"])
+        except (TypeError, ValueError):
+            continue
+        for claim_field, (section, actual_field) in CHECKED_CLAIMS.items():
+            actual = observed.get(section, {}).get(actual_field)
+            verdict = classify_claim(e.get(claim_field), actual)
+            m.context_claims_total += 1
+            if verdict is ClaimVerdict.SUPPORTED:
+                m.context_claims_supported += 1
+            elif verdict is ClaimVerdict.CONTRADICTED:
+                m.context_claims_contradicted += 1
+                m.contradictions_by_field[claim_field] = (
+                    m.contradictions_by_field.get(claim_field, 0) + 1
+                )
+            else:
+                m.context_claims_missing += 1
+    if m.context_claims_total:
+        m.context_fidelity_rate = m.context_claims_supported / m.context_claims_total
 
 
 def payment_metrics_are_consistent(m: RunMetrics) -> bool:
@@ -198,11 +265,17 @@ def run_is_valid(m: RunMetrics, tolerance: float = 0.1) -> tuple[bool, str]:
             f"{m.payments_recovered} payments recovered); the payments table was "
             f"written by another run"
         )
-    error_rate = m.agent_errors / m.payments_processed
+    # Invalid proposals count here too. They are not provider errors, but a run
+    # where the model mostly returned unusable output describes the model's
+    # output format, not its recovery behaviour, and must not be compared as if
+    # it did.
+    unusable = m.agent_errors + m.invalid_proposals
+    error_rate = unusable / m.payments_processed
     if error_rate > tolerance:
         return False, (
-            f"{m.agent_errors} of {m.payments_processed} cases failed to reach "
-            f"the model ({error_rate:.0%} > {tolerance:.0%} tolerance)"
+            f"{unusable} of {m.payments_processed} cases produced no usable "
+            f"proposal ({m.agent_errors} provider errors, {m.invalid_proposals} "
+            f"invalid) -- {error_rate:.0%} > {tolerance:.0%} tolerance"
         )
     return True, "ok"
 
