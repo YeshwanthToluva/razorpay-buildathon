@@ -450,17 +450,20 @@ header.hero,section{background:
   linear-gradient(to bottom, color-mix(in srgb,var(--bg) 78%,transparent),
                              color-mix(in srgb,var(--bg) 78%,transparent))}
 
-/* bars grow to their value once, on load */
-.ltrack i,.bar i,.abrow .track i{
-  width:var(--w,0);
-  transition:width 420ms cubic-bezier(.22,.8,.28,1);
+/* Bars carry their value in `width` from the first frame; the reveal is a
+   transform, so a missed animation frame or disabled JS still leaves the bar
+   at the number printed beside it. */
+.ltrack i,.bar i,.abrow .track i,.armbar i{
+  transform-origin:left;
+  animation:grow 460ms cubic-bezier(.22,.8,.28,1) both;
 }
-.armbar i{transition:width 420ms cubic-bezier(.22,.8,.28,1)}
+.bar i.neg{transform-origin:right}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
 /* recovery bar inside the experiments table */
 .armbar{height:5px;width:104px;background:var(--surface-2);border-radius:2px;overflow:hidden;
   display:inline-block;vertical-align:middle;margin-left:9px}
-.armbar i{display:block;height:100%;background:var(--good);border-radius:2px;width:var(--w,0)}
+.armbar i{display:block;height:100%;background:var(--good);border-radius:2px}
 tr.base .armbar i{background:var(--accent)}
 td.recovery{white-space:nowrap}
 
@@ -478,9 +481,116 @@ details.ev .body{animation:drawer 200ms cubic-bezier(.22,.8,.28,1)}
 .hook .z,.safety .big{position:relative}
 
 @media (prefers-reduced-motion:reduce){
-  .ltrack i,.bar i,.abrow .track i,.armbar i{transition:none!important;width:var(--w,auto)}
+  .ltrack i,.bar i,.abrow .track i,.armbar i{animation:none}
   details.ev .body{animation:none}
   body{background-attachment:scroll}
+}
+
+
+/* atmosphere: a slow, barely-there field behind the grid. If you stop looking
+   at it you should not notice it. */
+body::before{
+  content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(46% 38% at 18% 12%, color-mix(in srgb,var(--accent) 11%,transparent), transparent 70%),
+    radial-gradient(40% 34% at 84% 26%, color-mix(in srgb,var(--good) 8%,transparent), transparent 72%),
+    radial-gradient(52% 40% at 50% 92%, color-mix(in srgb,var(--accent) 8%,transparent), transparent 70%);
+  animation:drift 48s ease-in-out infinite alternate;
+}
+@keyframes drift{from{transform:translate3d(-1.4%,-1%,0) scale(1)}
+                 to{transform:translate3d(1.4%,1.2%,0) scale(1.04)}}
+
+/* an instrument settling onto a measured result: the presentation animates,
+   the value never does -- a count-up puts a false number in the first frame. */
+.settle{animation:settle 520ms cubic-bezier(.2,.75,.3,1) both}
+@keyframes settle{
+  from{opacity:0;transform:translateY(5px);filter:blur(5px)}
+  to{opacity:1;transform:none;filter:blur(0)}
+}
+.sside .rate{animation-delay:60ms}
+.sside.agentside .rate{animation-delay:150ms}
+.svs .gapval{animation-delay:260ms}
+
+/* progression: the connector draws once as you reach it (#3) */
+.pstep{--lit:0}
+.pstep::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+  background:var(--accent);transform:scaleX(var(--lit));transform-origin:left;
+  transition:transform 520ms cubic-bezier(.2,.75,.3,1)}
+.pstep.lit{--lit:1}
+.pstep .pid{transition:color 300ms ease}
+.pstep.lit .pid{color:var(--accent-ink)}
+
+/* filter presets (#7) */
+.presets{display:flex;gap:2px;border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;background:var(--surface)}
+.presets button{font-family:var(--mono);font-size:11.5px;padding:6px 12px;border:0;
+  background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;
+  transition:background 130ms ease,color 130ms ease}
+.presets button:hover{background:var(--surface-2);color:var(--ink)}
+.presets button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.presets button .c{opacity:.65;margin-left:5px}
+
+/* run metadata strip (#8) */
+.runmeta{display:flex;flex-wrap:wrap;gap:0;margin:16px 0 18px;border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.runmeta div{padding:9px 14px;border-right:1px solid var(--line-soft);min-width:118px}
+.runmeta div:last-child{border-right:none}
+.runmeta .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted)}
+.runmeta .v{font-family:var(--mono);font-size:12.5px;margin-top:2px}
+.runmeta .ok{color:var(--good)}
+.runmeta .ok::before{content:"● "}
+
+/* hover status on a case row (#4) */
+.pitem{position:relative}
+.pitem .flag{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.05em;
+  color:var(--muted);max-height:0;overflow:hidden;opacity:0;
+  transition:max-height 160ms ease,opacity 160ms ease}
+.pitem:hover .flag,.pitem[aria-selected="true"] .flag{max-height:20px;opacity:1}
+.pitem .flag.win{color:var(--good)} .pitem .flag.loss{color:var(--warn)}
+
+/* replay chain builds like a diagnostic trace (#4) */
+.cyclestrip .stage,.cyclestrip .arrow{animation:trace 240ms cubic-bezier(.2,.75,.3,1) both}
+@keyframes trace{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* divergence rows become clickable evidence (#5) */
+.divrow{cursor:pointer}
+.divrow[data-empty="1"]{cursor:default}
+.divrow .cls{display:flex;align-items:center;gap:7px}
+.divrow .jump{font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--accent);
+  opacity:0;transition:opacity 140ms ease;white-space:nowrap}
+.divrow:hover .jump{opacity:1}
+
+/* safety pipeline (#6) */
+.pipeline{margin-top:20px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface);padding:18px 20px}
+.pipeline .head{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.dots{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.35;
+  transform:translateY(-9px);transition:transform 520ms cubic-bezier(.2,.75,.3,1),
+    background 400ms ease,opacity 400ms ease}
+.dots.flow .dot{transform:none;opacity:1}
+.dots.flow .dot.denied{background:var(--warn)}
+.dots.flow .dot.held{background:var(--accent)}
+.gate{height:3px;background:linear-gradient(90deg,var(--warn),var(--accent));border-radius:2px;
+  position:relative;margin:6px 0 14px}
+.gate span{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--surface);
+  padding:0 10px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted)}
+.fates{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.fate{border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;background:var(--surface-2)}
+.fate .n{font-family:var(--mono);font-size:22px;font-weight:600}
+.fate .l{font-size:12px;color:var(--muted);margin-top:2px}
+.fate.denied .n{color:var(--warn)} .fate.held .n{color:var(--accent)}
+.fate.through{border-color:var(--good);background:var(--good-soft)}
+.fate.through .n{color:var(--good)}
+
+@media (prefers-reduced-motion:reduce){
+  body::before{animation:none}
+  .settle,.cyclestrip .stage,.cyclestrip .arrow{animation:none}
+  .pstep::after{transition:none}
+  .dot{transform:none;opacity:1;transition:none}
 }
 
 footer{padding:34px 0 60px;color:var(--muted);font-size:12.5px}
@@ -500,11 +610,13 @@ footer code{font-family:var(--mono)}
 </div></nav>
 
 <header class="hero" id="overview"><div class="wrap">
-  <div class="eyebrow">Sprint 1 · autonomy level 2 · synthetic data only</div>
+  <div class="eyebrow">An engineering study in constrained agent autonomy</div>
   <h1>We gave an AI agent 50 failed payments.
     <span class="dim">Then we tried to find out whether it deserved the right to recover them.</span></h1>
-  <p class="sub">A reproducible experiment in agentic financial operations. Every proposal, policy
-  decision, execution, failure and refused action in this study is published in the repository.</p>
+  <p class="sub">We didn't set out to prove that agents are better. We set out to measure what happens
+  when one is allowed to make financial recovery decisions — and where deterministic controls still
+  matter. Every proposal, policy decision, execution, failure and refused action is published in the
+  repository.</p>
 
   <div class="score" id="score"></div>
   <div class="hook" id="hook"></div>
@@ -571,13 +683,15 @@ footer code{font-family:var(--mono)}
 
 <section class="chapter" id="replay"><div class="wrap">
   <div class="chapnum">06 — Show me the failure</div>
-  <h2>Every decision, replayed from the ledger.</h2>
-  <p class="say">Pick a case. Claims the agent restated about it are checked against the state it was
-  actually shown, so a contradicted premise sits next to the decision it produced. Sort by outcome to
-  find where the agent beat the rule set — and where it did not.</p>
+  <h2>Decision replay</h2>
+  <p class="say">Reconstruct the agent's observable decision path from the ledger. Claims it restated
+  about a case are checked against the state it was actually shown, so a contradicted premise sits next
+  to the decision it produced.</p>
+  <div class="runmeta" id="runmeta"></div>
   <div class="controls">
-    <label class="ctl" for="rparm">Arm</label><select id="rparm"></select>
-    <label class="ctl" for="rpfilter">Show</label><select id="rpfilter"></select>
+    <label class="ctl" for="rparm">Run</label><select id="rparm"></select>
+    <div class="presets" id="presets" role="group" aria-label="Filter cases"></div>
+    <label class="ctl" for="rpfilter">Class</label><select id="rpfilter"></select>
   </div>
   <div class="replay">
     <div class="plist" id="plist" role="listbox" aria-label="Payments"></div>
@@ -607,6 +721,7 @@ footer code{font-family:var(--mono)}
       <code>PolicyBypassError</code> rather than moving funds.</p>
     </div>
   </div>
+  <div class="pipeline" id="pipeline"></div>
   <div class="attackbar" id="attackbar"></div>
   <div class="hostile" id="hostile"></div>
 </div></section>
@@ -668,19 +783,12 @@ const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---- motion: set every bar's width after first paint so it grows to value.
    Widths are recorded on the element, so reduced-motion still lands on them. ---- */
-const BARS = [];
 function bar_(node, widthPct){ return bar(node, widthPct); }
 function bar(node, widthPct){
-  node.style.setProperty('--w', widthPct + '%');
-  if(!REDUCED) node.style.width = '0%';   // grown to --w on the next frame
-  BARS.push([node, widthPct]);
+  node.style.width = widthPct + '%';   // correct at rest, always
   return node;
 }
-function settleBars(){
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    BARS.forEach(([n,w]) => { n.style.width = w + '%'; });
-  }));
-}
+function settleBars(){ /* reveal is CSS-only; nothing to settle */ }
 
 /* ---- evidence drawer helper: every claim names its source file ---- */
 function evidence(rows){
@@ -698,12 +806,12 @@ const refAgent = agents.reduce((a,b) => a.metrics.recovery_rate >= b.metrics.rec
 const gapMinor0 = base.metrics.revenue_recovered_minor - refAgent.metrics.revenue_recovered_minor;
 const sc = document.getElementById('score');
 sc.innerHTML =
-  '<div class="sside rules"><div class="who">Rules</div><div class="rate">' +
+  '<div class="sside rules"><div class="who">Rules</div><div class="rate settle">' +
     pct(base.metrics.recovery_rate) + '</div><div class="amt">' +
     rupee(base.metrics.revenue_recovered_minor) + ' recovered</div></div>' +
-  '<div class="svs"><div class="gaplab">gap</div><div class="gapval">' +
+  '<div class="svs"><div class="gaplab">gap</div><div class="gapval settle">' +
     rupee(gapMinor0) + '</div></div>' +
-  '<div class="sside agentside"><div class="who">Agent</div><div class="rate">' +
+  '<div class="sside agentside"><div class="who">Agent</div><div class="rate settle">' +
     pct(refAgent.metrics.recovery_rate) + '</div><div class="amt">' +
     rupee(refAgent.metrics.revenue_recovered_minor) + ' recovered</div></div>';
 
@@ -786,6 +894,20 @@ pev.append(evidence([
 ]));
 document.querySelector('#fixes .progression').append(pev);
 
+/* the connector draws once, as you reach it; nothing is hidden before that */
+if('IntersectionObserver' in window && !REDUCED){
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(!e.isIntersecting) return;
+      [...progrow.children].forEach((n,i) => setTimeout(() => n.classList.add('lit'), i*160));
+      io.disconnect();
+    });
+  }, {threshold:.35});
+  io.observe(progrow);
+} else {
+  [...progrow.children].forEach(n => n.classList.add('lit'));
+}
+
 /* ---- run table ---- */
 const asay = document.getElementById('agentsay');
 asay.innerHTML = 'Five agent runs, every one valid, every one below the rule set. Observed range <b>' +
@@ -852,7 +974,27 @@ function renderDivergence(){
   rows.forEach(([k,v]) => {
     const gain = v.delta > 0, zero = v.delta === 0;
     const row = el('div','divrow'+(gain?' gain':'')+(zero?' neutral':''));
-    row.append(el('div','cls', LABELS[k] || k));
+    const label = el('div','cls', '<span>' + (LABELS[k] || k) + '</span>');
+    if(v.n) label.append(el('span','jump','view cases →'));
+    row.append(label);
+    if(v.n){
+      row.dataset.cls = k;
+      row.setAttribute('role','button');
+      row.setAttribute('tabindex','0');
+      const jump = () => {
+        rpArm.value = divArm.value;
+        buildFilter();
+        rpFilter.value = k;
+        setPreset(null);
+        selected = v.payments[0];
+        renderList(); renderChain();
+        document.getElementById('replay').scrollIntoView({behavior: REDUCED?'auto':'smooth'});
+      };
+      row.addEventListener('click', jump);
+      row.addEventListener('keydown', e => {
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); jump(); }
+      });
+    } else row.dataset.empty = '1';
     row.append(el('div','cnt', v.n + '&nbsp;pay'));
     const bar = el('div','bar');
     bar.append(el('span','mid'));
@@ -883,6 +1025,41 @@ function classOf(runId, pid){
   for(const [k,v] of Object.entries(b)) if(v.payments.includes(pid)) return k;
   return null;
 }
+const PRESETS = [
+  ['all','All cases', () => true],
+  ['lost','Agent lost', (pid,runId) => deltaFor(pid,runId) < 0],
+  ['won','Agent won', (pid,runId) => deltaFor(pid,runId) > 0],
+  ['blocked','Policy blocked', (pid,runId) => {
+     const p = (D.replay[runId]||{})[pid];
+     return p && p.steps.some(x => x.k==='policy' && x.decision !== 'ALLOW');
+  }],
+];
+let preset = 'all';
+function deltaFor(pid, runId){
+  const a = (D.replay[runId]||{})[pid], b = (D.replay[base.run_id]||{})[pid];
+  if(!a || !b || runId === base.run_id) return 0;
+  return a.revenue - b.revenue;
+}
+function setPreset(key){
+  preset = key;
+  [...document.getElementById('presets').children].forEach(btn =>
+    btn.setAttribute('aria-pressed', String(btn.dataset.k === key)));
+  if(key) rpFilter.value = 'all';
+}
+function buildPresets(){
+  const box = document.getElementById('presets');
+  box.innerHTML = '';
+  const runId = rpArm.value, pays = D.replay[runId] || {};
+  PRESETS.forEach(([k,label,fn]) => {
+    const n = Object.keys(pays).filter(pid => k==='all' || fn(pid, runId)).length;
+    const b = el('button','', label + '<span class="c">' + n + '</span>');
+    b.dataset.k = k;
+    b.setAttribute('aria-pressed', String(preset === k));
+    b.addEventListener('click', () => { setPreset(k); renderList(); renderChain(); });
+    box.append(b);
+  });
+}
+
 function buildFilter(){
   const cur = rpFilter.value;
   rpFilter.innerHTML = '';
@@ -894,8 +1071,11 @@ function buildFilter(){
 function renderList(){
   const runId = rpArm.value, pays = D.replay[runId] || {};
   const list = document.getElementById('plist'); list.innerHTML = '';
-  const ids = Object.keys(pays).sort().filter(pid =>
-    rpFilter.value === 'all' || classOf(runId, pid) === rpFilter.value);
+  const presetFn = (PRESETS.find(x => x[0] === preset) || PRESETS[0])[2];
+  const ids = Object.keys(pays).sort().filter(pid => {
+    if(preset && preset !== 'all') return presetFn(pid, runId);
+    return rpFilter.value === 'all' || classOf(runId, pid) === rpFilter.value;
+  });
   if(!ids.length){ list.append(el('div','pitem','<span class="psc">No payments in this class</span>')); document.getElementById('chain').innerHTML=''; return; }
   ids.forEach(pid => {
     const p = pays[pid];
@@ -909,7 +1089,15 @@ function renderList(){
       if(dl > 0){ mark = '+' + rupee(dl); mcls = 'got'; }
       else if(dl < 0){ mark = '−' + rupee(Math.abs(dl)); mcls = 'lost'; }
     }
-    item.innerHTML = '<span><span class="pid">'+pid+'</span><span class="psc">'+p.scenario+'</span></span>' +
+    let flag = '', fcls = '';
+    if(bp0 && runId !== base.run_id){
+      const dl = p.revenue - bp0.revenue;
+      if(dl > 0){ flag = '● agent better'; fcls = 'win'; }
+      else if(dl < 0){ flag = '● agent lost'; fcls = 'loss'; }
+      else flag = '● matched baseline';
+    }
+    item.innerHTML = '<span><span class="pid">'+pid+'</span><span class="psc">'+p.scenario+'</span>' +
+      (flag ? '<span class="flag '+fcls+'">'+flag+'</span>' : '') + '</span>' +
       '<span class="prv '+mcls+'">'+mark+'</span>';
     const pick = () => { selected = pid; renderList(); renderChain(); };
     item.addEventListener('click', pick);
@@ -919,6 +1107,33 @@ function renderList(){
   });
   if(!ids.includes(selected)){ selected = ids[0]; renderList(); return; }
 }
+function renderRunMeta(){
+  const runId = rpArm.value;
+  const arm = D.arms.find(a => a.run_id === runId);
+  const pays = D.replay[runId] || {};
+  /* the badge is earned, not decorative: sum the ledger and compare it to the
+     metric this run reported. */
+  const fromLedger = Object.values(pays).reduce((s,p) => s + p.revenue, 0);
+  const reported = arm.metrics.revenue_recovered_minor;
+  const verified = fromLedger === reported;
+  const box = document.getElementById('runmeta');
+  box.innerHTML = '';
+  [['run', arm.label],
+   ['validity', arm.valid ? 'VALID' : 'INVALID'],
+   ['model', arm.model || 'none (rules)'],
+   ['prompt', arm.prompt_version || '—'],
+   ['dataset', 'synthetic-v1'],
+   ['seed', '20260304'],
+   ['policy', 'policy-v1'],
+   ['evidence', verified ? 'LEDGER VERIFIED' : 'MISMATCH']
+  ].forEach(([k,v]) => {
+    const d = el('div');
+    const ok = (k === 'evidence' && verified) || (k === 'validity' && arm.valid);
+    d.append(el('div','k',k), el('div','v' + (ok?' ok':''), v));
+    box.append(d);
+  });
+}
+
 function renderChain(){
   const runId = rpArm.value, p = (D.replay[runId]||{})[selected];
   const c = document.getElementById('chain'); c.innerHTML = '';
@@ -1016,6 +1231,9 @@ function renderChain(){
     }
     strip.append(se);
     c.append(strip);
+    if(!REDUCED){
+      [...strip.children].forEach((n,i) => { n.style.animationDelay = (60 + i*70) + 'ms'; });
+    }
   });
 
   const out = el('div','outcome');
@@ -1025,9 +1243,12 @@ function renderChain(){
       (bp.steps.filter(x=>x.k==='proposal').map(x=>x.action).join(' → ')||'none')+'</div>' : '');
   c.append(out);
 }
-rpArm.addEventListener('change', () => { buildFilter(); renderList(); renderChain(); });
-rpFilter.addEventListener('change', () => { renderList(); renderChain(); });
-buildFilter(); selected = 'pay_0033'; renderList(); renderChain();
+rpArm.addEventListener('change', () => {
+  buildFilter(); buildPresets(); renderRunMeta(); renderList(); renderChain();
+});
+rpFilter.addEventListener('change', () => { setPreset(null); renderList(); renderChain(); });
+buildFilter(); buildPresets(); renderRunMeta();
+selected = 'pay_0033'; renderList(); renderChain();
 
 /* ---- safety ---- */
 const attempted = D.arms.reduce((s,a) => s + (a.metrics.policy_violations_attempted||0), 0);
@@ -1077,6 +1298,46 @@ hev.append(evidence([
   ['invariant','executed_without_policy_allow = 0']
 ]));
 document.querySelector('#safety .wrap').append(hev);
+
+/* ---- the boundary, drawn once: every attempted action meets the gate ---- */
+const heldN = D.arms.reduce((s,a) => s + (a.metrics.approvals_required||0), 0);
+const deniedN = BLOCKED_TOTAL;
+const totalN = deniedN + heldN;
+const pipe = document.getElementById('pipeline');
+pipe.innerHTML =
+  '<div class="head"><span>agent · ' + totalN + ' actions attempted</span>' +
+  '<span>deterministic policy gate</span></div>';
+const dots = el('div','dots');
+for(let i=0;i<totalN;i++){
+  const d = el('span','dot ' + (i < deniedN ? 'denied' : 'held'));
+  if(!REDUCED) d.style.transitionDelay = (i * 7) + 'ms';
+  dots.append(d);
+}
+pipe.append(dots);
+pipe.append(el('div','gate','<span>policy</span>'));
+const fates = el('div','fates');
+[[deniedN,'denied outright','denied'],
+ [heldN,'held for human approval','held'],
+ [0,'reached the payment provider','through']].forEach(([n,l,cls]) => {
+  const f = el('div','fate ' + cls);
+  f.append(el('div','n', String(n)), el('div','l', l));
+  fates.append(f);
+});
+pipe.append(fates);
+pipe.append(evidence([
+  ['source','data/adversarial/blocked_actions.csv'],
+  ['summary','data/adversarial/summary.json'],
+  ['denied / held / executed', deniedN + ' / ' + heldN + ' / 0'],
+  ['invariant','executed_without_policy_allow = 0']
+]));
+
+/* flow them once, when the boundary comes into view */
+if('IntersectionObserver' in window && !REDUCED){
+  const io2 = new IntersectionObserver(es => {
+    es.forEach(e => { if(e.isIntersecting){ dots.classList.add('flow'); io2.disconnect(); } });
+  }, {threshold:.2});
+  io2.observe(dots);
+} else dots.classList.add('flow');
 
 /* ---- evidence index ---- */
 const EV = [
