@@ -165,6 +165,23 @@ def compute(engine: Engine, run_id: str, dataset_version: str) -> RunMetrics:
     return m
 
 
+def payment_metrics_are_consistent(m: RunMetrics) -> bool:
+    """Cross-check run-scoped evidence against dataset-scoped state.
+
+    `successful_interventions` counts money-moving attempts belonging to THIS
+    run; `payments_recovered` counts rows in the payments table. Recovery is
+    terminal, so each recovered payment has exactly one such attempt and the two
+    must agree. When they do not, the payments table was written by some other
+    run and every dataset-derived figure here -- revenue recovered, recovery
+    rate, escalations, stopped -- describes a mixture of runs rather than this
+    one.
+
+    This is what per-run dataset isolation prevents; the check exists so that a
+    run predating it, or any future regression, cannot be quoted by accident.
+    """
+    return m.successful_interventions == m.payments_recovered
+
+
 def run_is_valid(m: RunMetrics, tolerance: float = 0.1) -> tuple[bool, str]:
     """Whether a run's numbers mean anything.
 
@@ -174,6 +191,13 @@ def run_is_valid(m: RunMetrics, tolerance: float = 0.1) -> tuple[bool, str]:
     """
     if not m.payments_processed:
         return False, "no payments were processed"
+    if not payment_metrics_are_consistent(m):
+        return False, (
+            f"dataset-derived metrics disagree with this run's own evidence "
+            f"({m.successful_interventions} successful interventions vs "
+            f"{m.payments_recovered} payments recovered); the payments table was "
+            f"written by another run"
+        )
     error_rate = m.agent_errors / m.payments_processed
     if error_rate > tolerance:
         return False, (

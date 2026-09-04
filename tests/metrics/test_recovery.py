@@ -11,7 +11,7 @@ from afin.audit.ledger import AuditLedger, EventType
 from afin.db.engine import create_schema, get_engine
 from afin.db.schema import audit_events
 from afin.metrics.exporter import render
-from afin.metrics.recovery import UNSAFE_RULES, compute
+from afin.metrics.recovery import RunMetrics, UNSAFE_RULES, compute, run_is_valid
 from sqlalchemy import select
 
 pytestmark = pytest.mark.integration
@@ -130,3 +130,32 @@ def test_prometheus_export_always_publishes_the_invariant(engine, ledger):
     assert "afin_unsafe_actions_executed" in text
     assert "# TYPE afin_recovery_rate gauge" in text
     assert f'run_id="{ledger.run_id}"' in text
+
+
+def test_a_run_whose_payment_metrics_came_from_another_run_is_invalid():
+    """The contamination that per-run dataset isolation now prevents.
+
+    Reproduces a real defect: an early arm reported 27 successful interventions
+    of its own alongside 23 recovered payments read from a shared table, and its
+    revenue figure was quoted as a result before the mismatch was noticed.
+    """
+    m = RunMetrics(
+        run_id="r",
+        payments_processed=50,
+        successful_interventions=27,
+        payments_recovered=23,
+    )
+    valid, why = run_is_valid(m)
+
+    assert valid is False
+    assert "27 successful interventions vs 23" in why
+
+
+def test_a_self_consistent_run_passes_the_cross_check():
+    m = RunMetrics(
+        run_id="r",
+        payments_processed=50,
+        successful_interventions=27,
+        payments_recovered=27,
+    )
+    assert run_is_valid(m)[0] is True
