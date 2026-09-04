@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revenue Recovery Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --surface-2:#eceeed; --line:#d5dbd9; --line-soft:#e4e9e7;
+  --ink:#14201e; --ink-2:#3d4c49; --muted:#65756f;
+  --accent:#0d7d78; --accent-soft:#d7ebe9; --accent-ink:#075450;
+  --good:#2f7a4f; --good-soft:#dcefe2;
+  --warn:#b4690e; --warn-soft:#f6e8d3;
+  --crit:#b3261e; --crit-soft:#f7dedc;
+  --grid:#e8ecea;
+  --radius:6px;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1211; --surface:#131b19; --surface-2:#1a2422; --line:#2a3634; --line-soft:#212c2a;
+    --ink:#e7edea; --ink-2:#c0ccc8; --muted:#8fa09b;
+    --accent:#3fb3ab; --accent-soft:#13312f; --accent-ink:#7fd3cc;
+    --good:#5fc088; --good-soft:#152a1f;
+    --warn:#dc9a45; --warn-soft:#2e2415;
+    --crit:#e0685f; --crit-soft:#301a19;
+    --grid:#1e2a28;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1211; --surface:#131b19; --surface-2:#1a2422; --line:#2a3634; --line-soft:#212c2a;
+  --ink:#e7edea; --ink-2:#c0ccc8; --muted:#8fa09b;
+  --accent:#3fb3ab; --accent-soft:#13312f; --accent-ink:#7fd3cc;
+  --good:#5fc088; --good-soft:#152a1f;
+  --warn:#dc9a45; --warn-soft:#2e2415;
+  --crit:#e0685f; --crit-soft:#301a19;
+  --grid:#1e2a28;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{text-wrap:balance;margin:0;font-weight:600;letter-spacing:-0.01em}
+a{color:var(--accent-ink)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:56px}
+.brand{font-weight:600;font-size:14px;letter-spacing:-0.01em;white-space:nowrap}
+.brand span{color:var(--accent);font-family:var(--mono)}
+.navlinks{display:flex;gap:2px;overflow-x:auto;margin-left:auto}
+.navlinks a{font-size:12.5px;color:var(--muted);text-decoration:none;padding:6px 10px;
+  border-radius:var(--radius);white-space:nowrap}
+.navlinks a:hover{color:var(--ink);background:var(--surface-2)}
+.navlinks a:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+header.hero{padding:44px 0 28px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.12}
+.sub{color:var(--ink-2);max-width:62ch;margin-top:12px;font-size:16px}
+
+/* headline figures */
+.figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+  background:var(--line-soft);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;margin-top:26px}
+.fig{background:var(--surface);padding:16px 18px}
+.fig .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
+  font-family:var(--mono)}
+.fig .v{font-size:27px;font-family:var(--mono);font-weight:600;margin-top:6px;letter-spacing:-0.02em}
+.fig .n{font-size:12px;color:var(--muted);margin-top:2px}
+.fig.pos .v{color:var(--good)} .fig.acc .v{color:var(--accent)}
+
+/* limits banner */
+.limits{margin-top:22px;border:1px solid var(--warn);border-left-width:3px;
+  background:var(--warn-soft);border-radius:var(--radius);padding:13px 16px}
+.limits b{color:var(--warn);font-size:12px;font-family:var(--mono);text-transform:uppercase;
+  letter-spacing:.06em;display:block;margin-bottom:5px}
+.limits p{margin:0;font-size:13.5px;color:var(--ink-2);max-width:88ch}
+
+section{padding:44px 0;border-bottom:1px solid var(--line-soft)}
+.shead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.shead h2{font-size:21px}
+.shead .tag{font-family:var(--mono);font-size:11px;color:var(--muted);
+  border:1px solid var(--line);border-radius:3px;padding:2px 7px}
+.lede{color:var(--ink-2);max-width:74ch;margin:0 0 20px;font-size:14.5px}
+
+/* table */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:900px}
+th,td{padding:10px 13px;text-align:right;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);font-weight:500;background:var(--surface-2);position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.base{background:var(--accent-soft)}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.base:hover{background:var(--accent-soft)}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.armname{font-weight:600}
+.armnote{color:var(--muted);font-size:11.5px;font-family:var(--mono);display:block;font-weight:400}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:3px;
+  border:1px solid transparent}
+.pill.ok{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.pill.zero{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+
+/* divergence */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+label.ctl{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em}
+select{font-family:var(--mono);font-size:13px;padding:6px 10px;border:1px solid var(--line);
+  border-radius:var(--radius);background:var(--surface);color:var(--ink)}
+.divgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.divrow{display:grid;grid-template-columns:230px 56px minmax(120px,1fr) 118px;gap:14px;align-items:center;
+  padding:9px 12px;background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius)}
+.divrow .cls{font-family:var(--mono);font-size:12.5px}
+.divrow .cnt{font-family:var(--mono);font-size:12.5px;color:var(--muted);text-align:right}
+.divrow .amt{font-family:var(--mono);font-size:13px;text-align:right;font-weight:500}
+.bar{height:9px;border-radius:2px;background:var(--surface-2);position:relative;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;display:block;border-radius:2px}
+.bar i.neg{background:var(--crit);right:50%}
+.bar i.pos{background:var(--good);left:50%}
+.bar .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line)}
+.divrow.gain .cls{color:var(--good)}
+.divrow.neutral .amt{color:var(--muted)}
+
+/* replay */
+.replay{display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.replay{grid-template-columns:1fr}}
+.plist{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+  max-height:560px;overflow-y:auto}
+.pitem{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 12px;cursor:pointer;
+  border-bottom:1px solid var(--line-soft);font-size:12.5px;align-items:center}
+.pitem:last-child{border-bottom:none}
+.pitem:hover{background:var(--surface-2)}
+.pitem[aria-selected="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.pitem .pid{font-family:var(--mono);font-weight:500}
+.pitem .psc{color:var(--muted);font-size:11px;display:block;font-family:var(--mono)}
+.pitem .prv{font-family:var(--mono);font-size:12px}
+.pitem .prv.got{color:var(--good)} .pitem .prv.none{color:var(--muted)}
+.chain{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:18px}
+.obs{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;
+  background:var(--line-soft);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;margin-bottom:20px}
+.obs div{background:var(--surface-2);padding:8px 11px}
+.obs .k{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.obs .v{font-family:var(--mono);font-size:14px;margin-top:2px}
+.step{border-left:2px solid var(--line);padding:0 0 16px 18px;position:relative}
+.step:last-child{padding-bottom:0}
+.step::before{content:"";position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;
+  background:var(--line);border:2px solid var(--surface)}
+.step.proposal::before{background:var(--accent)}
+.step.policy::before{background:var(--warn)}
+.step.exec::before{background:var(--good)}
+.step.exec.fail::before{background:var(--muted)}
+.step.invalid::before{background:var(--crit)}
+.step .kind{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted)}
+.step .act{font-family:var(--mono);font-size:14px;font-weight:600;margin-top:1px}
+.step p{margin:6px 0 0;font-size:13px;color:var(--ink-2);max-width:74ch}
+.step .meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:5px}
+.claims{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.claim{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:3px;border:1px solid}
+.claim.ok{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.claim.bad{background:var(--crit-soft);color:var(--crit);border-color:var(--crit)}
+.verdict{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:3px;
+  border:1px solid}
+.verdict.ALLOW{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.verdict.DENY{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.verdict.REQUIRE_APPROVAL{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent)}
+.outcome{margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft);
+  display:flex;gap:22px;flex-wrap:wrap;font-family:var(--mono);font-size:13px}
+.outcome b{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;
+  letter-spacing:.05em;display:block}
+
+/* safety */
+.safety{border:1px solid var(--good);border-radius:var(--radius);background:var(--good-soft);
+  padding:22px;display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center}
+@media (max-width:720px){.safety{grid-template-columns:1fr}}
+.safety .big{font-family:var(--mono);font-size:52px;font-weight:600;color:var(--good);line-height:1}
+.safety .biglabel{font-family:var(--mono);font-size:11.5px;color:var(--good);text-transform:uppercase;
+  letter-spacing:.06em;margin-top:4px}
+.safety p{margin:0;font-size:14px;color:var(--ink-2);max-width:70ch}
+.safety code{font-family:var(--mono);font-size:13px;background:var(--surface);padding:1px 5px;
+  border-radius:3px;border:1px solid var(--line)}
+.hostile{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.hcard{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:12px 14px}
+.hcard .h{font-family:var(--mono);font-size:12px;color:var(--crit)}
+.hcard .d{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+/* timeline */
+.tl{display:grid;gap:2px}
+.tlrow{display:grid;grid-template-columns:112px minmax(0,1fr) 108px;gap:16px;align-items:start;
+  padding:14px 16px;background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius)}
+@media (max-width:720px){.tlrow{grid-template-columns:1fr}}
+.tlrow .id{font-family:var(--mono);font-size:12.5px;color:var(--accent);font-weight:600}
+.tlrow h3{font-size:14.5px}
+.tlrow p{margin:5px 0 0;font-size:13px;color:var(--ink-2);max-width:76ch}
+.tlrow .res{font-family:var(--mono);font-size:16px;text-align:right;font-weight:600}
+@media (max-width:720px){.tlrow .res{text-align:left}}
+.tlrow .reslab{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;text-align:right}
+@media (max-width:720px){.tlrow .reslab{text-align:left}}
+.tlrow.concl{border-color:var(--accent);background:var(--accent-soft)}
+
+footer{padding:34px 0 60px;color:var(--muted);font-size:12.5px}
+footer p{max-width:80ch;margin:0 0 8px}
+footer code{font-family:var(--mono)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="wrap">
+  <div class="brand">Revenue Recovery Lab <span>· agent evaluation</span></div>
+  <div class="navlinks">
+    <a href="#runs">Runs</a><a href="#divergence">Divergence</a><a href="#replay">Replay</a>
+    <a href="#safety">Safety</a><a href="#timeline">Timeline</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">Sprint 1 · autonomy level 2 · synthetic data only</div>
+  <h1>Can an agent recover at-risk revenue better than a rule set?</h1>
+  <p class="sub">A frozen experimental record: six runs over the same 50 synthetic failed payments,
+  every decision passed through a deterministic policy engine and written to an append-only ledger.</p>
+  <div class="figures" id="figures"></div>
+  <div class="limits">
+    <b>Evidence and limits</b>
+    <p>Every arm is <strong>n&nbsp;=&nbsp;1</strong> on one dataset, one seed, one model and one API path.
+    Run-to-run variance has not been estimated — observed spread across repeats of the same configuration is
+    several percentage points, which is larger than most differences shown here. The model budget for this
+    phase is closed, so the replication needed to resolve that was not run. Read the arms as observations,
+    not as a ranking.</p>
+  </div>
+</div></header>
+
+<section id="runs"><div class="wrap">
+  <div class="shead"><h2>Run comparison</h2><span class="tag">6 runs · all valid</span></div>
+  <p class="lede">All arms share the dataset <span class="mono">synthetic-v1</span>, seed
+  <span class="mono">20260304</span> and policy <span class="mono">policy-v1&nbsp;ce95966c6cf1b196</span>.
+  The baseline is deterministic and reproduced byte-identically across 8 separate runs.</p>
+  <div class="tablewrap"><table id="runtable"><thead><tr>
+    <th>Arm</th><th>Recovery</th><th>Revenue ₹</th><th>Paid</th><th>Proposed</th><th>Denied</th>
+    <th>Retries</th><th>Escalated</th><th>Stopped</th><th>Ctx fidelity</th><th>Unsafe exec</th>
+  </tr></thead><tbody></tbody></table></div>
+</div></section>
+
+<section id="divergence"><div class="wrap">
+  <div class="shead"><h2>Why did the agent lose?</h2><span class="tag">vs deterministic baseline</span></div>
+  <p class="lede">Every payment is classified by comparing the agent's decisions against the baseline's on
+  the same case. "Correct action" is not a judgement call — it is the highest-probability action for that
+  failure category under the simulator's own published physics.</p>
+  <div class="controls">
+    <label class="ctl" for="divarm">Arm</label>
+    <select id="divarm"></select>
+  </div>
+  <div class="divgrid" id="divgrid"></div>
+</div></section>
+
+<section id="replay"><div class="wrap">
+  <div class="shead"><h2>Payment replay</h2><span class="tag">observed → proposed → policy → executed</span></div>
+  <p class="lede">Reconstructed from the audit ledger. Claims the agent restated about the case are checked
+  against the state it was actually shown, so a contradicted premise is visible next to the decision it
+  produced.</p>
+  <div class="controls">
+    <label class="ctl" for="rparm">Arm</label><select id="rparm"></select>
+    <label class="ctl" for="rpfilter">Show</label><select id="rpfilter"></select>
+  </div>
+  <div class="replay">
+    <div class="plist" id="plist" role="listbox" aria-label="Payments"></div>
+    <div class="chain" id="chain"></div>
+  </div>
+</div></section>
+
+<section id="safety"><div class="wrap">
+  <div class="shead"><h2>Safety and authorization</h2><span class="tag">the invariant</span></div>
+  <p class="lede">The agent proposes; it never executes. An <span class="mono">AuthorizedAction</span> can
+  only be minted inside the policy module, and the payment provider will not act without one — so a route
+  from proposal to money that skips policy raises an exception rather than moving funds.</p>
+  <div class="safety">
+    <div><div class="big" id="unsafeTotal">0</div><div class="biglabel">unsafe actions executed</div></div>
+    <p>Across all six runs in this console — and every run recorded in the project — no action reached the
+    payment provider without a policy <code>ALLOW</code>. Unsafe actions <em>proposed</em> are an
+    experimental observation and are counted separately; the deterministic boundary blocked
+    <span id="blockedTotal" class="mono"></span> of them here, and let none through.</p>
+  </div>
+  <div class="hostile" id="hostile"></div>
+</div></section>
+
+<section id="timeline"><div class="wrap">
+  <div class="shead"><h2>Experiment timeline</h2><span class="tag">what each run tested</span></div>
+  <p class="lede">Each experiment changed one variable. Two of them falsified earlier hypotheses from this
+  same series; those records were corrected rather than left standing.</p>
+  <div class="tl" id="tl"></div>
+</div></section>
+
+<footer><div class="wrap">
+  <p>Built entirely from committed evidence — <code>data/ledger/*.json</code> and
+  <code>data/runs/*.json</code> — never from the database, so every figure here is reproducible from the
+  repository alone. Regenerate with <code>python analysis/build_console_data.py</code>.</p>
+  <p>Synthetic data only. No real customer, payment or communication data appears in this project.
+  288 tests · 19 adversarial · 147 policy.</p>
+</div></footer>
+
+<script id="console-data" type="application/json">__CONSOLE_DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('console-data').textContent);
+const rupee = m => '₹' + (m/100).toLocaleString('en-IN',{maximumFractionDigits:0});
+const pct = v => (v*100).toFixed(1) + '%';
+const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
+
+const base = D.arms.find(a => a.is_baseline);
+const agents = D.arms.filter(a => !a.is_baseline);
+const bestAgent = agents.reduce((a,b) => a.metrics.recovery_rate >= b.metrics.recovery_rate ? a : b);
+
+/* ---- headline figures ---- */
+const figs = [
+  ['Revenue at risk', rupee(base.metrics.revenue_at_risk_minor), '50 synthetic failed payments', ''],
+  ['Deterministic baseline', pct(base.metrics.recovery_rate), rupee(base.metrics.revenue_recovered_minor) + ' recovered', 'acc'],
+  ['Best observed agent', pct(bestAgent.metrics.recovery_rate), bestAgent.label + ' · ' + rupee(bestAgent.metrics.revenue_recovered_minor), ''],
+  ['Unsafe actions executed', '0', 'across all ' + D.arms.length + ' runs', 'pos'],
+];
+const figWrap = document.getElementById('figures');
+figs.forEach(([k,v,n,cls]) => {
+  const f = el('div','fig'+(cls?' '+cls:''));
+  f.append(el('div','k',k), el('div','v',v), el('div','n',n));
+  figWrap.append(f);
+});
+
+/* ---- run table ---- */
+const tb = document.querySelector('#runtable tbody');
+D.arms.forEach(a => {
+  const m = a.metrics, tr = el('tr', a.is_baseline ? 'base' : '');
+  const name = el('td','', '<span class="armname">'+a.label+'</span><span class="armnote">'+a.note+'</span>');
+  tr.append(name);
+  const fid = m.context_fidelity_rate ? pct(m.context_fidelity_rate) : '—';
+  [pct(m.recovery_rate), (m.revenue_recovered_minor/100).toLocaleString('en-IN'),
+   m.payments_recovered, m.actions_proposed, m.actions_denied, m.retries,
+   m.escalations, m.stopped, fid].forEach(v => tr.append(el('td','n',String(v))));
+  tr.append(el('td','n','<span class="pill zero">'+m.unsafe_actions_executed+'</span>'));
+  tb.append(tr);
+});
+
+/* ---- divergence ---- */
+const divArm = document.getElementById('divarm');
+agents.forEach(a => divArm.append(new Option(a.label, a.run_id)));
+divArm.value = 'agent-gpt-treatment-nofb-20260904T105956-054a8f' in D.divergence
+  ? 'agent-gpt-treatment-nofb-20260904T105956-054a8f' : agents[0].run_id;
+
+const LABELS = {
+  excessive_escalation:'Excessive escalation', premature_stopping:'Premature stopping',
+  correct_diagnosis_correct_action:'Correct diagnosis + action',
+  correct_diagnosis_suboptimal_action:'Correct diagnosis, suboptimal action',
+  policy_blocked_correctly:'Policy blocked correctly', both_failed:'Both failed',
+  agent_better:'Agent better than baseline', execution_failure:'Execution failure', other:'Other'
+};
+function renderDivergence(){
+  const b = D.divergence[divArm.value] || {};
+  const rows = Object.entries(b).sort((x,y) => x[1].delta - y[1].delta);
+  const max = Math.max(1, ...rows.map(r => Math.abs(r[1].delta)));
+  const g = document.getElementById('divgrid'); g.innerHTML = '';
+  rows.forEach(([k,v]) => {
+    const gain = v.delta > 0, zero = v.delta === 0;
+    const row = el('div','divrow'+(gain?' gain':'')+(zero?' neutral':''));
+    row.append(el('div','cls', LABELS[k] || k));
+    row.append(el('div','cnt', v.n + '&nbsp;pay'));
+    const bar = el('div','bar');
+    bar.append(el('span','mid'));
+    if(!zero){
+      const i = el('i', gain?'pos':'neg');
+      i.style.width = (Math.abs(v.delta)/max*50) + '%';
+      bar.append(i);
+    }
+    row.append(bar);
+    row.append(el('div','amt', zero ? '—' : (gain?'+':'−') + rupee(Math.abs(v.delta))));
+    g.append(row);
+  });
+  const total = rows.reduce((s,r) => s + r[1].delta, 0);
+  const tr = el('div','divrow');
+  tr.append(el('div','cls','<strong>Net vs baseline</strong>'), el('div','cnt','50 pay'),
+            el('div','bar'), el('div','amt','<strong>'+(total<0?'−':'+')+rupee(Math.abs(total))+'</strong>'));
+  g.append(tr);
+}
+divArm.addEventListener('change', renderDivergence);
+renderDivergence();
+
+/* ---- replay ---- */
+const rpArm = document.getElementById('rparm'), rpFilter = document.getElementById('rpfilter');
+D.arms.forEach(a => rpArm.append(new Option(a.label, a.run_id)));
+rpArm.value = divArm.value;
+let selected = null;
+
+function classOf(runId, pid){
+  const b = D.divergence[runId]; if(!b) return null;
+  for(const [k,v] of Object.entries(b)) if(v.payments.includes(pid)) return k;
+  return null;
+}
+function buildFilter(){
+  const cur = rpFilter.value;
+  rpFilter.innerHTML = '';
+  rpFilter.append(new Option('All payments','all'));
+  const b = D.divergence[rpArm.value];
+  if(b) Object.keys(b).sort().forEach(k => rpFilter.append(new Option(LABELS[k]||k, k)));
+  rpFilter.value = [...rpFilter.options].some(o => o.value===cur) ? cur : 'all';
+}
+function renderList(){
+  const runId = rpArm.value, pays = D.replay[runId] || {};
+  const list = document.getElementById('plist'); list.innerHTML = '';
+  const ids = Object.keys(pays).sort().filter(pid =>
+    rpFilter.value === 'all' || classOf(runId, pid) === rpFilter.value);
+  if(!ids.length){ list.append(el('div','pitem','<span class="psc">No payments in this class</span>')); document.getElementById('chain').innerHTML=''; return; }
+  ids.forEach(pid => {
+    const p = pays[pid];
+    const item = el('div','pitem');
+    item.setAttribute('role','option');
+    item.setAttribute('tabindex','0');
+    item.innerHTML = '<span><span class="pid">'+pid+'</span><span class="psc">'+p.scenario+'</span></span>' +
+      '<span class="prv '+(p.revenue?'got':'none')+'">'+(p.revenue?rupee(p.revenue):'—')+'</span>';
+    const pick = () => { selected = pid; renderList(); renderChain(); };
+    item.addEventListener('click', pick);
+    item.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); }});
+    if(pid === selected) item.setAttribute('aria-selected','true');
+    list.append(item);
+  });
+  if(!ids.includes(selected)){ selected = ids[0]; renderList(); return; }
+}
+function renderChain(){
+  const runId = rpArm.value, p = (D.replay[runId]||{})[selected];
+  const c = document.getElementById('chain'); c.innerHTML = '';
+  if(!p) return;
+  const cls = classOf(runId, selected);
+  c.append(el('div','', '<div class="eyebrow" style="margin-bottom:6px">'+selected+' · '+p.scenario+
+    ' · '+p.category+'</div><h3 style="font-size:17px">'+rupee(p.amount)+' at risk'+
+    (cls ? ' <span class="tag" style="font-weight:400">'+(LABELS[cls]||cls)+'</span>' : '')+'</h3>'));
+  const o = p.observed || {};
+  const obs = el('div','obs');
+  [['retries used',o.retry_count],['contacts',o.contact_count],['disputed',o.is_disputed],
+   ['opted out',o.opted_out],['prior successes',o.prior_successful_payments],['risk flag',o.risk_flag]]
+   .forEach(([k,v]) => { const d=el('div'); d.append(el('div','k',k), el('div','v',String(v))); obs.append(d); });
+  c.append(el('div','',''), obs);
+  p.steps.forEach(s => {
+    if(s.k === 'proposal'){
+      const st = el('div','step proposal');
+      st.append(el('div','kind','cycle '+s.cycle+' · agent proposal'), el('div','act', s.action));
+      if(s.diagnosis) st.append(el('p','', s.diagnosis));
+      if(s.why) st.append(el('p','','<em>'+s.why+'</em>'));
+      st.append(el('div','meta','confidence ' + (s.confidence!=null?s.confidence.toFixed(2):'—')));
+      const claims = el('div','claims');
+      if(s.claimed_opted_out !== null && s.claimed_opted_out !== undefined){
+        const ok = s.claimed_opted_out === o.opted_out;
+        claims.append(el('span','claim '+(ok?'ok':'bad'), 'claims opted_out='+s.claimed_opted_out+(ok?' ✓':' ✗ actual '+o.opted_out)));
+      }
+      if(s.claimed_prior !== null && s.claimed_prior !== undefined){
+        const ok = s.claimed_prior === o.prior_successful_payments;
+        claims.append(el('span','claim '+(ok?'ok':'bad'), 'claims prior='+s.claimed_prior+(ok?' ✓':' ✗ actual '+o.prior_successful_payments)));
+      }
+      if(s.claimed_last_outcome) claims.append(el('span','claim ok','last attempt: '+s.claimed_last_outcome));
+      if(claims.children.length) st.append(claims);
+      c.append(st);
+    } else if(s.k === 'policy'){
+      const st = el('div','step policy');
+      st.append(el('div','kind','policy engine'),
+        el('div','act','<span class="verdict '+s.decision+'">'+s.decision+'</span> <span style="font-weight:400;font-size:12.5px;color:var(--muted)">'+s.rule+'</span>'));
+      if(s.reason) st.append(el('p','', s.reason));
+      c.append(st);
+    } else if(s.k === 'exec'){
+      const fail = s.result !== 'SUCCESS' || !s.recovered;
+      const st = el('div','step exec'+(fail?' fail':''));
+      st.append(el('div','kind','executed via simulator'), el('div','act', s.action));
+      st.append(el('div','meta', s.result + (s.recovered ? ' · recovered ' + rupee(s.recovered) : ' · nothing recovered') + ' · → ' + s.state));
+      c.append(st);
+    } else if(s.k === 'invalid'){
+      const st = el('div','step invalid');
+      st.append(el('div','kind','invalid proposal'), el('div','act','—'));
+      st.append(el('p','', s.error || ''));
+      c.append(st);
+    }
+  });
+  const bp = (D.replay[base.run_id]||{})[selected];
+  const out = el('div','outcome');
+  out.innerHTML = '<div><b>Final state</b>'+(p.final||'—')+'</div>' +
+    '<div><b>Agent recovered</b>'+(p.revenue?rupee(p.revenue):'₹0')+'</div>' +
+    (bp ? '<div><b>Baseline recovered</b>'+(bp.revenue?rupee(bp.revenue):'₹0')+'</div>' : '') +
+    (bp ? '<div><b>Baseline actions</b>'+(bp.steps.filter(x=>x.k==='proposal').map(x=>x.action).join(' → ')||'none')+'</div>' : '');
+  c.append(out);
+}
+rpArm.addEventListener('change', () => { buildFilter(); renderList(); renderChain(); });
+rpFilter.addEventListener('change', () => { renderList(); renderChain(); });
+buildFilter(); selected = 'pay_0033'; renderList(); renderChain();
+
+/* ---- safety ---- */
+document.getElementById('unsafeTotal').textContent =
+  D.arms.reduce((s,a) => s + (a.metrics.unsafe_actions_executed||0), 0);
+document.getElementById('blockedTotal').textContent =
+  D.arms.reduce((s,a) => s + (a.metrics.policy_violations_prevented||0), 0);
+const hostile = [
+  ['REFUND_PAYMENT','Invented financial operation'],
+  ['WIRE_FUNDS','Invented financial operation'],
+  ['CANCEL_SUBSCRIPTION','Invented financial operation'],
+  ['DROP TABLE payments;--','Injection through the action field'],
+  ['SYSTEM OVERRIDE …','Prompt injection in the reasoning summary'],
+  ['pay_0002 from pay_0001','Acting on another customer’s payment'],
+];
+const hg = document.getElementById('hostile');
+hostile.forEach(([h,d]) => {
+  const card = el('div','hcard');
+  card.append(el('div','h', h), el('div','d', d + ' · not executed'));
+  hg.append(card);
+});
+
+/* ---- timeline ---- */
+const TL = [
+  ['baseline','Deterministic baseline','Rule set only, no model. Reproduced byte-identically across 8 runs, which is what makes every later comparison meaningful.', pct(base.metrics.recovery_rate)],
+  ['002a','Divergence analysis','Regenerated per-payment evidence and classified all 50 payments. Escalation accounted for 94.6% of the revenue gap; the agent diagnosed dead instruments correctly and escalated anyway.', '24.4%'],
+  ['002e','Context ablation','Made the factual state explicit. Fidelity rose 81.4% → 95.5% and excessive escalation went to zero — and revenue did not follow. The failure moved rather than resolved.', '30.5%'],
+  ['002g','Outcome feedback','Reported each executed action’s result back to the agent. Absorption rose 47% → 87%; retry-after-failure, cycles burned and revenue were unchanged — the last to the rupee.', '33.0%'],
+  ['now','Current reading','Two experiments improved what the agent knows; neither moved the economic outcome. On this dataset the residual gap does not look like an information problem. What remains sits in premature stopping and suboptimal action choice — about six payments per run.', '—'],
+];
+const tl = document.getElementById('tl');
+TL.forEach(([id,title,body,res],i) => {
+  const row = el('div','tlrow'+(i===TL.length-1?' concl':''));
+  row.append(el('div','id', id));
+  const mid = el('div'); mid.append(el('h3','',title), el('p','',body)); row.append(mid);
+  const r = el('div'); r.append(el('div','reslab','recovery'), el('div','res',res)); row.append(r);
+  tl.append(row);
+});
+</script>
+</body>
+</html>
