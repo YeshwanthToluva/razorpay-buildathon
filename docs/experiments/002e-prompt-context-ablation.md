@@ -136,9 +136,14 @@ Contradicted `opted_out` claims fell from 10 (control) to 2 (treatment).
 | control | **SCHEDULE_RETRY** (one cycle) | **4,833** | COMPLETED |
 | treatment | RETRY / SCHEDULE / RETRY / SCHEDULE | **0** | IN_PROGRESS |
 
-**The treatment eliminated the advantage.** The control deferred once and was
-right; the treatment spent all four cycles alternating retries and never
-recovered. The treatment produced **no agent-better cases at all**.
+**In this run the treatment lost the advantage.** The control deferred once and
+was right; the treatment spent all four cycles alternating retries and never
+recovered.
+
+**Superseded by 002g:** `pay_0033` reappears in *both* 002g arms, which use this
+same treatment prompt. Its absence here is run-to-run variance, not an effect of
+the treatment. The claim below that the treatment "removed the judgement" is
+withdrawn.
 
 This is the concrete cost of the treatment's push toward action: it did not
 merely reduce over-caution, it removed the judgement that made the agent
