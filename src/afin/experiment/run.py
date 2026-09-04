@@ -45,7 +45,6 @@ async def run_experiment(
     arm: str = "agent",
     profile: str = "gpt",
     seed: int = DEFAULT_SEED,
-    reset: bool = True,
     config: PolicyConfig = DEFAULT_POLICY_CONFIG,
     now: datetime = EPOCH,
     limit: int | None = None,
@@ -53,12 +52,16 @@ async def run_experiment(
     engine = get_engine()
     create_schema(engine)
 
-    if reset:
-        # Each arm starts from the identical dataset, so arms are comparable.
-        load_into(engine, generate(seed=seed))
-
     tag = arm if arm == "baseline" else f"{arm}-{profile}"
     run_id = f"{tag}-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}-{uuid.uuid4().hex[:6]}"
+
+    # Each run gets its own private copy of the dataset, generated from the same
+    # seed so the content is identical. Arms therefore never share mutable
+    # financial state and can run concurrently against different providers --
+    # which matters when a free-tier rate limit makes a sequential sweep take
+    # an hour per model.
+    dataset_version = f"{DATASET_VERSION}:{run_id}"
+    load_into(engine, generate(seed=seed, version=dataset_version))
     reasoner, prompt_version = build_reasoner(arm, profile)
     ledger = AuditLedger(engine=engine, run_id=run_id)
     ledger.open_run(
@@ -77,7 +80,7 @@ async def run_experiment(
         prompt_version=prompt_version,
         policy_version=config.version,
         policy_fingerprint=config.fingerprint(),
-        dataset_version=DATASET_VERSION,
+        dataset_version=dataset_version,
         random_seed=seed,
     )
 
@@ -88,10 +91,10 @@ async def run_experiment(
         ledger=ledger,
         config=config,
         now=now,
-        dataset_version=DATASET_VERSION,
+        dataset_version=dataset_version,
     )
 
-    cases = load_cases(engine, DATASET_VERSION)
+    cases = load_cases(engine, dataset_version)
     if limit:
         cases = cases[:limit]
 
@@ -110,7 +113,7 @@ async def run_experiment(
                 print(f"        ! {err}")
 
     ledger.close_run()
-    metrics = compute(engine, run_id, DATASET_VERSION)
+    metrics = compute(engine, run_id, dataset_version)
 
     out_dir = pathlib.Path(__file__).resolve().parents[3] / "data" / "runs"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -201,7 +204,6 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--no-reset", action="store_true")
     args = parser.parse_args()
 
     _, metrics = asyncio.run(
@@ -209,7 +211,6 @@ def main() -> None:
             arm=args.arm,
             profile=args.profile,
             seed=args.seed,
-            reset=not args.no_reset,
             limit=args.limit,
         )
     )
