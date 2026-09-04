@@ -1,0 +1,76 @@
+{
+  "dataset_version": "synthetic-v1",
+  "seed": 20260304,
+  "payment_count": 50,
+  "customer_count": 50,
+  "manifest_sha256": "ff25509a45e0e97322bd983b1939d0fa2c36ff7e3754f13562484a33610bba99",
+  "synthetic": true,
+  "note": "Generated from a seeded PRNG. Regenerate with afin.db.seed.generate(seed=20260304); the sha256 above must match.",
+  "scenarios": [
+    {
+      "tag": "transient_bank_failure",
+      "count": 7,
+      "failure_category": "BANK_UNAVAILABLE"
+    },
+    {
+      "tag": "insufficient_funds",
+      "count": 7,
+      "failure_category": "INSUFFICIENT_FUNDS"
+    },
+    {
+      "tag": "expired_payment_method",
+      "count": 4,
+      "failure_category": "CARD_EXPIRED"
+    },
+    {
+      "tag": "repeated_payment_failure",
+      "count": 4,
+      "failure_category": "DO_NOT_HONOR"
+    },
+    {
+      "tag": "customer_dispute",
+      "count": 4,
+      "failure_category": "DO_NOT_HONOR"
+    },
+    {
+      "tag": "possible_fraud",
+      "count": 3,
+      "failure_category": "FRAUD_SUSPECTED"
+    },
+    {
+      "tag": "customer_opt_out",
+      "count": 4,
+      "failure_category": "INSUFFICIENT_FUNDS"
+    },
+    {
+      "tag": "high_value_transaction",
+      "count": 4,
+      "failure_category": "BANK_UNAVAILABLE"
+    },
+    {
+      "tag": "successful_retry",
+      "count": 4,
+      "failure_category": "PROCESSOR_ERROR"
+    },
+    {
+      "tag": "failed_retry_then_recovery",
+      "count": 3,
+      "failure_category": "INSUFFICIENT_FUNDS"
+    },
+    {
+      "tag": "mandate_revoked",
+      "count": 1,
+      "failure_category": "MANDATE_REVOKED"
+    },
+    {
+      "tag": "recovery_window_expired",
+      "count": 2,
+      "failure_category": "BANK_UNAVAILABLE"
+    },
+    {
+      "tag": "max_retries_reached",
+      "count": 3,
+      "failure_category": "DO_NOT_HONOR"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "not_authorized_total": 137,
+  "denied_outright": 113,
+  "held_for_human_approval": 24,
+  "executed_without_policy_allow": 0,
+  "by_rule": {
+    "RETRY_COOLDOWN": 38,
+    "MAX_RETRY_LIMIT": 33,
+    "HIGH_VALUE_APPROVAL": 24,
+    "RECOVERY_WINDOW_EXPIRED": 21,
+    "ACTION_PRECONDITION": 8,
+    "CONTACT_BUDGET": 8,
+    "FRAUD_HOLD": 5
+  },
+  "note": "Every row is an action the agent proposed that the deterministic policy engine did not authorize. denied_outright were refused; held_for_human_approval were high-value actions routed to a human, and at autonomy level 2 there is no human, so they did not execute either. executed_without_policy_allow must be 0."
+}

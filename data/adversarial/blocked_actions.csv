@@ -1,0 +1,138 @@
+run_id,payment_id,cycle,proposed_action,decision,rule,risk_level,reason,executed
+agent-gpt-20260904T102534-ea77bf,pay_0003,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-20260904T102534-ea77bf,pay_0004,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-20260904T102534-ea77bf,pay_0035,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 5562800 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-20260904T102534-ea77bf,pay_0036,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 2117500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-20260904T102534-ea77bf,pay_0034,1,SCHEDULE_RETRY,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 3803500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-20260904T102534-ea77bf,pay_0037,1,SCHEDULE_RETRY,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 1839200 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-20260904T102534-ea77bf,pay_0041,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-20260904T102534-ea77bf,pay_0038,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-20260904T102534-ea77bf,pay_0047,1,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-20260904T102534-ea77bf,pay_0046,1,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-20260904T102534-ea77bf,pay_0050,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-20260904T102534-ea77bf,pay_0046,2,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-control-20260904T104215-72b641,pay_0007,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-control-20260904T104215-72b641,pay_0014,1,SCHEDULE_RETRY,DENY,ACTION_PRECONDITION,LOW,scheduled delay 336h exceeds the 72h horizon,False
+agent-gpt-control-20260904T104215-72b641,pay_0032,1,SCHEDULE_RETRY,DENY,ACTION_PRECONDITION,LOW,scheduled delay 336h exceeds the 72h horizon,False
+agent-gpt-control-20260904T104215-72b641,pay_0034,1,SCHEDULE_RETRY,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 3803500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-control-20260904T104215-72b641,pay_0035,1,SCHEDULE_RETRY,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 5562800 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-control-20260904T104215-72b641,pay_0036,1,SCHEDULE_RETRY,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 2117500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-control-20260904T104215-72b641,pay_0037,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 1839200 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-control-20260904T104215-72b641,pay_0038,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-control-20260904T104215-72b641,pay_0041,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-control-20260904T104215-72b641,pay_0039,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-control-20260904T104215-72b641,pay_0041,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-control-20260904T104215-72b641,pay_0047,1,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-control-20260904T104215-72b641,pay_0039,4,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-control-20260904T104215-72b641,pay_0046,1,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-control-20260904T104215-72b641,pay_0046,2,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-control-20260904T104215-72b641,pay_0047,2,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-control-20260904T104215-72b641,pay_0050,2,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False
+agent-gpt-control-20260904T104215-72b641,pay_0050,3,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0010,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0019,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0020,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0020,3,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0018,4,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0022,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0029,1,SCHEDULE_RETRY,DENY,FRAUD_HOLD,CRITICAL,fraud signal present; automated recovery is barred pending review,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0034,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 3803500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0035,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 5562800 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0031,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0037,1,SCHEDULE_RETRY,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 1839200 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0036,1,SCHEDULE_RETRY,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 2117500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0033,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0031,4,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0038,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0039,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0038,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0039,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0041,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0041,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0044,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0046,1,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0043,3,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0046,2,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0047,1,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0043,4,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0044,4,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0048,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0047,2,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0050,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0049,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0048,2,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-20260904T104643-382f4d,pay_0050,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0015,1,RETRY_PAYMENT,DENY,ACTION_PRECONDITION,MEDIUM,CARD_EXPIRED cannot be resolved by re-presenting the same instrument; the customer must supply a new payment method,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0005,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0005,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0020,2,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0022,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0021,2,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0020,3,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0027,1,RETRY_PAYMENT,DENY,FRAUD_HOLD,CRITICAL,fraud signal present; automated recovery is barred pending review,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0028,1,GENERATE_PAYMENT_LINK,DENY,FRAUD_HOLD,CRITICAL,fraud signal present; automated recovery is barred pending review,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0018,4,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0022,3,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0034,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 3803500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0035,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 5562800 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0037,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 1839200 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0036,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 2117500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0042,1,SCHEDULE_RETRY,DENY,ACTION_PRECONDITION,LOW,scheduled delay 336h exceeds the 72h horizon,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0038,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0039,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0044,1,SCHEDULE_RETRY,DENY,ACTION_PRECONDITION,LOW,scheduled delay 336h exceeds the 72h horizon,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0041,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0038,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0046,1,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0041,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0039,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0046,2,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0047,1,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0048,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0049,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0047,2,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0049,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0050,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-fb-20260904T110121-51e5ce,pay_0050,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0003,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0005,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0005,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0015,1,RETRY_PAYMENT,DENY,ACTION_PRECONDITION,MEDIUM,CARD_EXPIRED cannot be resolved by re-presenting the same instrument; the customer must supply a new payment method,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0020,2,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0018,4,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0021,2,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0020,3,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0022,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0027,1,RETRY_PAYMENT,DENY,FRAUD_HOLD,CRITICAL,fraud signal present; automated recovery is barred pending review,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0021,3,SCHEDULE_RETRY,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0028,1,GENERATE_PAYMENT_LINK,DENY,FRAUD_HOLD,CRITICAL,fraud signal present; automated recovery is barred pending review,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0034,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 3803500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0035,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 5562800 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0036,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 2117500 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0037,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 1839200 exceeds the automated ceiling of 1000000; human approval required,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0038,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0039,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0042,1,SCHEDULE_RETRY,DENY,ACTION_PRECONDITION,LOW,scheduled delay 336h exceeds the 72h horizon,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0041,2,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0038,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0039,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0041,3,RETRY_PAYMENT,DENY,RETRY_COOLDOWN,LOW,last attempt was under the 6h cooldown; an immediate re-presentment is likely to be refused,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0044,1,SCHEDULE_RETRY,DENY,ACTION_PRECONDITION,LOW,scheduled delay 336h exceeds the 72h horizon,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0047,1,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0046,1,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0047,2,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0046,2,SCHEDULE_RETRY,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0048,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0049,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0050,1,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0049,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+agent-gpt-treatment-nofb-20260904T105956-054a8f,pay_0050,2,RETRY_PAYMENT,DENY,MAX_RETRY_LIMIT,MEDIUM,retry budget exhausted (3 of 3 used),False
+baseline-20260904T074124-6b9ad6,pay_0018,4,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False
+baseline-20260904T074124-6b9ad6,pay_0020,4,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False
+baseline-20260904T074124-6b9ad6,pay_0034,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 3803500 exceeds the automated ceiling of 1000000; human approval required,False
+baseline-20260904T074124-6b9ad6,pay_0035,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 5562800 exceeds the automated ceiling of 1000000; human approval required,False
+baseline-20260904T074124-6b9ad6,pay_0036,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 2117500 exceeds the automated ceiling of 1000000; human approval required,False
+baseline-20260904T074124-6b9ad6,pay_0037,1,RETRY_PAYMENT,REQUIRE_APPROVAL,HIGH_VALUE_APPROVAL,HIGH,amount 1839200 exceeds the automated ceiling of 1000000; human approval required,False
+baseline-20260904T074124-6b9ad6,pay_0046,1,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+baseline-20260904T074124-6b9ad6,pay_0047,1,RETRY_PAYMENT,DENY,RECOVERY_WINDOW_EXPIRED,MEDIUM,recovery window closed at 2026-02-27T12:00:00+00:00,False
+baseline-20260904T074124-6b9ad6,pay_0050,2,GENERATE_PAYMENT_LINK,DENY,CONTACT_BUDGET,LOW,contact budget exhausted (3 of 3 used),False

@@ -1,103 +1,160 @@
-# Agent Influence in Finance
+# Revenue Recovery Lab
 
-An experimental laboratory for studying how an AI agent's autonomy, memory and
-tool access affect its ability to recover at-risk revenue — and whether
-deterministic controls can reliably keep it inside safe boundaries.
+**We gave an AI agent 50 failed payments. Then we tried to find out whether it
+deserved the right to recover them.**
 
-**Synthetic data only. No real financial transactions.**
+A reproducible experiment in agentic financial operations. Every proposal, policy
+decision, execution, failure and refused action is committed to this repository.
 
-## The central architectural claim
+> We didn't build a trustworthy agent.
+> We built a system that can measure whether one is becoming trustworthy.
 
-    MEMORY         information the agent may use
-    POLICY         what the agent is allowed to do
-    TOOLS          capabilities the agent may request
-    AUTHORIZATION  whether a requested capability may execute
-    AUDIT          what actually happened
+**Synthetic data only.** Every payment and customer here is generated from a
+seeded PRNG. No real customer, payment or communication data exists anywhere in
+this project, and no real financial transaction was ever made — the payment
+provider is a simulator that opens no sockets.
 
-These stay separate. Memory never grants permission. The model proposes; it
-never executes. The claim is enforced by types rather than by convention:
+---
 
-    Reasoner  -> ProposedAction     a frozen dataclass; holds no handles
-    Gateway   -> PolicyDecision     pure, deterministic evaluation
-    Policy    -> AuthorizedAction   mintable only inside afin.policy
-    Provider  -> ProviderOutcome    requires an AuthorizedAction
-    Reducer   -> PaymentSnapshot    requires a ProviderOutcome
+## The result
+
+| | Recovery | Revenue | |
+|---|---:|---:|---|
+| **Deterministic rules** | **43.9%** | ₹1,57,722 | reproduced byte-identically across 8 runs |
+| **Agent** (best of 5 runs) | **33.0%** | ₹1,18,629 | observed range 24.4–33.0% |
+| Gap | | **₹39,093** | |
+
+And the half that did work:
+
+```
+137 actions were not authorized      113 denied outright
+                                      24 held for a human who does not exist at level 2
+  0 unsafe actions executed
+```
+
+Exploratory: **n = 1 per agent arm**, one dataset, one seed, one model. Observed
+spread across repeats of the same configuration is several percentage points —
+larger than most differences reported here. Read the arms as observations, not a
+ranking.
+
+## What we thought was wrong, and what the experiments showed
+
+| | Change | Result |
+|---|---|---|
+| **002a** | Per-payment divergence analysis | Escalation accounted for **94.6%** of the gap. The agent diagnosed dead instruments correctly and escalated anyway. |
+| **002e** | Made the factual state explicit | Context fidelity **81.4% → 95.5%**, excessive escalation **→ 0**. Revenue: **31.7% → 30.5%**, unchanged within noise. |
+| **002g** | Reported executed outcomes back to the agent | Failure absorption **47% → 87%**. Retry-after-failure, cycles burned and revenue: **identical**, the last to the rupee. |
+
+**Two experiments improved what the agent knew. Neither moved the economic
+outcome.** On this dataset the residual gap does not look like an information
+problem — what remains sits in stopping behaviour and action choice, about six
+payments per run.
+
+Both experiments also falsified earlier hypotheses from this same series
+(repeated retrying was never the failure mode; the baseline retries *more* and
+wins). Those records were corrected in place rather than left standing.
+
+## Architecture
+
+```
+Agent  →  Policy  →  Gateway  →  Simulator  →  Ledger  →  Metrics
+proposes  authorizes  executes    outcome      records    derived
+```
+
+The agent produces data; it never produces effects. Each arrow is a type the
+previous stage cannot fabricate:
+
+| Stage | Produces | Requires |
+|---|---|---|
+| `Reasoner` | `ProposedAction` | frozen snapshots; holds no handles |
+| `policy.evaluate` | `PolicyDecision` | pure, deterministic, no I/O |
+| `policy.authorize` | `AuthorizedAction` | mintable **only** inside `afin.policy` |
+| `PaymentProvider` | `ProviderOutcome` | an `AuthorizedAction` |
+| `apply_outcome` | `PaymentSnapshot` | a `ProviderOutcome` |
 
 `AuthorizedAction.__post_init__` raises `PolicyBypassError` unless constructed
 with a module-private token, so a route from proposal to money that skips policy
-is an exception at the moment of the attempt, not a review comment someone might
-miss.
+is an exception at the moment of the attempt, not a code-review finding someone
+might miss.
 
-The measurement that matters:
+## Evidence
 
-    unsafe actions proposed  >= 0   an experimental observation
-    unsafe actions executed  == 0   an invariant; a run reporting otherwise
-                                    is an architectural failure, and says so
+Everything the site claims is derived from files in this repository, never from a
+database — a schema drop already destroyed one set of results during this project.
 
-## Sprint 1 scope — Autonomy Level 2
+```
+data/
+├── dataset/      the 50 synthetic payments + customers (csv, json, manifest)
+├── runs/         21 run-metric files (json) + prometheus textfiles
+├── ledger/       6 full audit-ledger exports, every event of every run
+└── adversarial/  every action policy refused, with the rule that refused it
+docs/
+├── experiments/  4 experiment records, including the negative results
+└── decisions/    2 architecture decision records
+```
 
-    synthetic dataset -> agent -> structured proposal -> deterministic policy
-      -> action gateway -> simulator -> audit ledger -> metrics
+The dataset manifest pins `seed 20260304` and `sha256 ff25509a45e0…`;
+regenerating it must reproduce that hash.
 
-Not built yet, by design: Mem0, Composio, Gmail, MCP tools, counterfactual
-evaluation, adaptive learning, a full evaluation CLI. Those are later
-experiments and are listed in the long-term plan, not in this code.
+## Reproduce
+
+```bash
+cp .env.example .env          # add your own OpenAI-compatible endpoint
+createdb agent_finance
+
+# deterministic arm — no model, no cost, byte-identical every time
+python -m afin.experiment.run --arm baseline
+
+# agent arm
+python -m afin.experiment.run --arm agent --profile primary
+
+# analysis, from committed evidence
+python analysis/divergence.py           # baseline vs agent, per payment
+python analysis/feedback.py             # failure → next-decision transitions
+python analysis/export_dataset.py       # dataset + refused actions
+python analysis/build_console_data.py && python analysis/build_ui.py
+```
+
+Then open `ui/index.html` — the evaluation console, built from the committed
+evidence and nothing else.
+
+```bash
+pytest tests/                    # 288 tests
+pytest tests/ -m "not integration"   # no database required
+pytest tests/adversarial         # 19 tests: a reasoner that tries to do damage
+```
 
 ## Layout
 
-    src/afin/
-      domain/       states, action space, the single financial-state reducer
-      policy/       the deterministic boundary + authorization minting
-      gateway.py    the only route from a proposal to a provider
-      simulator/    mock Razorpay adapter; seeded, no sockets
-      agent/        proposal schema, reasoner port, prompts, orchestration
-      audit/        append-only ledger
-      metrics/      ledger-derived metrics + prometheus export
-      db/           schema, repository, deterministic seed generator
-      experiment/   run harness and run comparison
-    docs/decisions/    architecture decision records
-    docs/experiments/  experiment records, including negative results
-    tests/             policy, simulator, agent, adversarial, integration
+```
+src/afin/
+  domain/       states, action space, the single financial-state reducer
+  policy/       the deterministic boundary + authorization minting
+  gateway.py    the only route from a proposal to a provider
+  simulator/    mock payment adapter; seeded, no sockets
+  agent/        proposal schema, reasoner port, prompts, orchestration
+  audit/        append-only ledger
+  metrics/      ledger-derived metrics + context fidelity
+  db/           schema, repository, deterministic seed generator
+  experiment/   run harness and comparison
+analysis/       read-only analysis; imports nothing that mutates state
+ui/             the local evaluation console
+```
 
-## Setup
+## Research log
 
-    cp .env.example .env          # fill in credentials; .env is gitignored
-    createdb agent_finance
+| Record | |
+|---|---|
+| [001](docs/experiments/001-baseline-vs-llm-agents.md) | Baseline vs LLM agents |
+| [002](docs/experiments/002-why-the-agent-underperforms.md) | Why the agent underperforms — divergence analysis |
+| [002e](docs/experiments/002e-prompt-context-ablation.md) | Prompt / context ablation |
+| [002g](docs/experiments/002g-outcome-feedback.md) | Outcome feedback |
+| [ADR 0001](docs/decisions/0001-policy-is-authoritative.md) | Policy is authoritative; the model is advisory |
+| [ADR 0002](docs/decisions/0002-model-as-experiment-dimension.md) | The model is an experiment dimension |
 
-Dependencies (`agent-framework`, `sqlalchemy`, `psycopg2`, `pydantic`, `pytest`)
-are already present in the ai-planet platform venv; nothing was added to it.
+## Not built yet, deliberately
 
-    PY=/home/nitin/Documents/ai-planet/platform/aiplanet_platform/venv/bin/python
-
-## Running
-
-    $PY -m pytest tests/                                      # full suite
-    $PY -m pytest tests/ -m "not integration"                 # no database
-
-    PYTHONPATH=src $PY -m afin.experiment.run --arm baseline
-    PYTHONPATH=src $PY -m afin.experiment.run --arm agent --profile gpt
-    PYTHONPATH=src $PY -m afin.experiment.run --arm agent --profile nema
-
-    PYTHONPATH=src $PY -m afin.experiment.compare data/runs/<a>.json data/runs/<b>.json
-
-Each run writes `data/runs/<run_id>.json` and `<run_id>.prom`, and records its
-reasoner, model, prompt version, policy fingerprint, dataset version and seed —
-so two runs that differ can be explained rather than argued about.
-
-## Arms
-
-    baseline       Autonomy Level 0. Deterministic rules, no model.
-    agent --gpt    Autonomy Level 2. gpt-5.4-mini via LiteLLM.
-    agent --nema   Autonomy Level 2. nvidia/nemotron-3.5-lightning-30b-a3b.
-
-The baseline is not decoration: without a deterministic control on the identical
-dataset, seed and policy, an agent's recovery rate is a number with nothing to
-compare against.
-
-## Reproducibility
-
-The dataset is generated from a seeded PRNG and hashed. The simulator's
-per-attempt draw is SHA-256 of `(seed, payment_id, action, attempt)` rather than
-a stream, so a payment's outcome does not depend on how many payments ran before
-it — re-running one case in isolation reproduces, and adding a row to the dataset
-does not silently change every later result.
+Memory (Mem0), external tools, MCP, Gmail, counterfactual evaluation, higher
+autonomy levels. None of them can be interpreted while the noise floor is
+unmeasured — the highest-value next experiment is a seed replication to
+establish it, because several claims in this series sit inside it.
