@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import time
 from datetime import datetime
 from typing import Sequence
 
@@ -45,6 +46,8 @@ class LLMReasoner:
         self.reasoning_effort = profile.reasoning_effort
         #: Transient provider faults absorbed by _request during this run.
         self.retries = 0
+        self._pace_lock = asyncio.Lock()
+        self._next_allowed = 0.0
         if profile.api_style == "responses":
             client_cls, self._options_cls = OpenAIChatClient, OpenAIChatOptions
         else:
@@ -90,7 +93,7 @@ class LLMReasoner:
     #: answer, and resampling it would quietly retry until the model looked
     #: better than it is, corrupting the invalid-proposal metric.
     RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
-    MAX_ATTEMPTS = 6
+    MAX_ATTEMPTS = 8
 
     @staticmethod
     def _status_of(exc: Exception) -> int | None:
@@ -104,6 +107,24 @@ class LLMReasoner:
                 return code
         return None
 
+    async def _pace(self) -> None:
+        """Hold requests to the profile's minimum interval.
+
+        Concurrent cases share one reasoner, so this is where a rate limit is
+        actually respected. Without it, six cases in flight fire six requests at
+        once, take six 429s, and spend the retry budget learning a limit that
+        was knowable in advance.
+        """
+        if self.profile.min_interval_seconds <= 0:
+            return
+        async with self._pace_lock:
+            now = time.monotonic()
+            wait = self._next_allowed - now
+            if wait > 0:
+                await asyncio.sleep(wait)
+                now = time.monotonic()
+            self._next_allowed = now + self.profile.min_interval_seconds
+
     async def _request(self, messages):
         """Call the provider, retrying transient faults with backoff.
 
@@ -113,6 +134,7 @@ class LLMReasoner:
         """
         last: Exception | None = None
         for attempt in range(self.MAX_ATTEMPTS):
+            await self._pace()
             try:
                 return await self._client.get_response(
                     messages,
@@ -132,7 +154,7 @@ class LLMReasoner:
                     raise
                 last = exc
                 self.retries += 1
-                await asyncio.sleep(min(2.0 ** attempt, 30.0) + random.uniform(0, 1.5))
+                await asyncio.sleep(min(2.0 ** attempt, 60.0) + random.uniform(0, 1.5))
         raise last if last else RuntimeError("unreachable")
 
     async def propose(

@@ -130,6 +130,9 @@ async def run_experiment(
 
     await asyncio.gather(*(run_one(p, c) for p, c in cases))
 
+    retries = getattr(reasoner, "retries", 0)
+    if retries:
+        print(f"  ({retries} transient provider faults absorbed by retry)")
     ledger.close_run()
     metrics = compute(engine, run_id, dataset_version)
 

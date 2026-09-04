@@ -48,6 +48,10 @@ class LLMProfile:
     #: latency across 50 payments rather than better action selection. It is a
     #: profile setting, and recorded on the run, so it can be varied on purpose.
     reasoning_effort: str = "low"
+    #: Minimum seconds between request starts for this profile. Free tiers
+    #: throttle aggressively, and discovering the limit by taking a 429 and
+    #: backing off wastes far more wall-clock than simply not exceeding it.
+    min_interval_seconds: float = 0.0
 
     def describe(self) -> str:
         return f"{self.name}:{self.model}"
@@ -82,6 +86,7 @@ class Settings:
         model = os.environ.get(prefix + "MODEL", "")
         api_style = os.environ.get(prefix + "API_STYLE", "chat_completions")
         reasoning_effort = os.environ.get(prefix + "REASONING_EFFORT", "low")
+        min_interval = float(os.environ.get(prefix + "MIN_INTERVAL_SECONDS", "0") or 0)
         if not (api_key and model):
             raise UnknownProfile(
                 f"LLM profile {name!r} is not configured; expected "
@@ -95,4 +100,5 @@ class Settings:
             model=model,
             api_style=api_style,
             reasoning_effort=reasoning_effort,
+            min_interval_seconds=min_interval,
         )
