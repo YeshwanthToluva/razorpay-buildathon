@@ -174,9 +174,17 @@ action** (`orchestrator.py:142`, inside `if not gw.executed`). When an action
 executes and *fails*, the agent is never told. It sees updated counters on the
 next cycle but never learns that its own previous attempt was declined.
 
-That is a plausible explanation for the repeated-retry pattern and was not
-introduced by this experiment — it is present in every run to date, including
-the baseline arm's own loop.
+That is **one of at least three candidate explanations** for the repeated-retry
+pattern, and this experiment cannot distinguish them:
+
+- **A** — missing execution feedback: the agent does not know its attempt failed.
+- **B** — the retry strategy is intrinsically over-aggressive, feedback or not.
+- **C** — the agent understands the failure and still judges another retry
+  rational.
+
+The gap was not introduced by this experiment; it is present in every run to
+date. But naming it as *the* cause would be promoting a hypothesis to a finding.
+Experiment 002g is designed to separate A from B and C.
 
 ## 11. Limitations
 
@@ -240,4 +248,15 @@ the failure to over-eager retrying, and cost the one case where agentic
 judgement beat the rule set.
 
 The deterministic baseline remains ahead at 43.9% versus 30.5%. Improving what
-the agent *knows* did not improve what it *chooses*.
+the agent *knows* did not improve what it *chooses* — on this dataset, at n = 1
+per arm.
+
+**What is established:** context grounding fixed factual reliability (81.4% →
+95.5%) and eliminated excessive escalation (15 → 0), and the economic outcome
+did not follow because the behavioural failure *moved* rather than resolved.
+That dissociation — a metric improving while the outcome does not — is the
+durable result of 002e, and it is why agent evaluation needs more than one
+metric.
+
+**What is not established:** why the behaviour moved to repeated retries. That
+is a hypothesis with three live candidates (§10), and 002g tests it.
