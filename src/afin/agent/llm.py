@@ -44,13 +44,22 @@ from afin.domain.models import CustomerSnapshot, PaymentSnapshot, ProposedAction
 
 
 class LLMReasoner:
-    def __init__(self, profile: LLMProfile | str = "gpt", prompt: str = "control"):
+    def __init__(
+        self,
+        profile: LLMProfile | str = "gpt",
+        prompt: str = "control",
+        outcome_feedback: bool = False,
+    ):
         if isinstance(profile, str):
             profile = Settings.profile(profile)
         self.profile = profile
         if prompt not in ("control", "treatment"):
             raise ValueError(f"unknown prompt arm {prompt!r}")
         self.prompt_arm = prompt
+        #: Experiment 002g. When on, the factual result of each executed
+        #: action is reported back on the next cycle. The prompt text is
+        #: otherwise identical, so this is the only variable.
+        self.outcome_feedback = outcome_feedback
         self.prompt_version = (
             PROMPT_VERSION if prompt == "control" else PROMPT_VERSION_TREATMENT
         )
@@ -190,6 +199,20 @@ class LLMReasoner:
             opts["reasoning_effort"] = self.reasoning_effort
         return opts
 
+    @staticmethod
+    def _render_attempts(attempts: Sequence[dict]) -> str:
+        """Factual record of what this run already did to this payment.
+
+        Values only. No recommendation, no characterisation of what the result
+        implies: a line such as "retrying is unlikely to work" would change the
+        agent's decision policy rather than its information, which is precisely
+        what experiment 002g must not do.
+        """
+        import json as _json
+
+        rows = "\n".join(f"  {_json.dumps(a, sort_keys=True)}" for a in attempts)
+        return f"\nATTEMPTS ALREADY MADE ON THIS PAYMENT IN THIS RUN\n{rows}\n"
+
     async def _pace(self) -> None:
         """Hold requests to the profile's minimum interval.
 
@@ -241,8 +264,11 @@ class LLMReasoner:
         feedback: Sequence[str] = (),
         cycle: int = 1,
         max_cycles: int = 4,
+        attempts: Sequence[dict] = (),
     ) -> ProposedAction:
         prompt = self._render(payment, customer, now, cycle, max_cycles)
+        if self.outcome_feedback and attempts:
+            prompt += self._render_attempts(attempts)
         if feedback:
             blocked = "\n".join(f"  - {f}" for f in feedback)
             prompt += (

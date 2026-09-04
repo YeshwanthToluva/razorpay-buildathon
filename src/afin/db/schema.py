@@ -142,6 +142,7 @@ audit_events = Table(
     # compared against the payment record, never trusted as it.
     Column("claimed_opted_out", Boolean, nullable=True),
     Column("claimed_prior_successful_payments", Integer, nullable=True),
+    Column("claimed_last_attempt_outcome", String(16), nullable=True),
     Column("policy_decision", String(24), nullable=True),
     Column("policy_rule", String(48), nullable=True),
     Column("policy_reason", Text, nullable=True),
@@ -179,6 +180,7 @@ CREATE TRIGGER audit_no_delete BEFORE DELETE ON audit_events
 ADDITIVE_COLUMNS_DDL = """
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_opted_out BOOLEAN;
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_prior_successful_payments INTEGER;
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_last_attempt_outcome VARCHAR(16);
 -- Widened in place for experiment 002e: prompt version names outgrew 32 chars.
 -- Widening a varchar never rewrites or loses data.
 ALTER TABLE runs ALTER COLUMN prompt_version TYPE VARCHAR(64);

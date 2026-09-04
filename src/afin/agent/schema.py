@@ -46,6 +46,11 @@ class AgentProposal(BaseModel):
         description="Restate, from the case shown to you, whether this customer "
         "has opted out of recovery communication.",
     )
+    last_attempt_outcome: str | None = Field(
+        default=None,
+        description="If a recovery attempt was already made on this payment, "
+        "restate its outcome: SUCCEEDED, FAILED, or NONE if no attempt was made.",
+    )
     prior_successful_payments: int | None = Field(
         default=None,
         description="Restate, from the case shown to you, how many successful "
@@ -67,6 +72,11 @@ class AgentProposal(BaseModel):
             channel=channel,
             claimed_opted_out=self.opted_out,
             claimed_prior_successful_payments=self.prior_successful_payments,
+            claimed_last_attempt_outcome=(
+                self.last_attempt_outcome.strip().upper()
+                if isinstance(self.last_attempt_outcome, str)
+                else None
+            ),
             raw_json=self.model_dump_json(),
         )
 

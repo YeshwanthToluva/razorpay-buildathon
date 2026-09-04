@@ -77,6 +77,9 @@ class Orchestrator:
 
         denied_actions: set[str] = set()
         feedback: list[str] = []
+        # Factual record of what this run already executed on this payment.
+        # Experiment 002g feeds it to the reasoner; the control ignores it.
+        attempts: list[dict] = []
 
         for cycle in range(1, self.max_cycles + 1):
             if result.payment.is_terminal:
@@ -85,7 +88,9 @@ class Orchestrator:
             payment = result.payment
             state = observed_state(payment, customer)
 
-            proposal = await self._propose(payment, customer, cycle, state, result, feedback)
+            proposal = await self._propose(
+                payment, customer, cycle, state, result, feedback, attempts
+            )
             if proposal is None:
                 break
             result.proposals += 1
@@ -107,6 +112,7 @@ class Orchestrator:
                 raw_proposal_json=proposal.raw_json,
                 claimed_opted_out=proposal.claimed_opted_out,
                 claimed_prior_successful_payments=proposal.claimed_prior_successful_payments,
+                claimed_last_attempt_outcome=proposal.claimed_last_attempt_outcome,
                 timestamp=self.now,
             )
 
@@ -149,7 +155,7 @@ class Orchestrator:
                     break
                 continue
 
-            self._execute(result, customer, cycle, state, proposal, gw)
+            self._execute(result, customer, cycle, state, proposal, gw, attempts=attempts)
 
         self.ledger.record(
             payment_id=result.payment.id,
@@ -167,11 +173,17 @@ class Orchestrator:
     # -- steps ------------------------------------------------------------
 
     async def _propose(
-        self, payment, customer, cycle, state, result, feedback
+        self, payment, customer, cycle, state, result, feedback, attempts
     ) -> ProposedAction | None:
         try:
             return await self.reasoner.propose(
-                payment, customer, self.now, tuple(feedback), cycle, self.max_cycles
+                payment,
+                customer,
+                self.now,
+                tuple(feedback),
+                cycle,
+                self.max_cycles,
+                tuple(attempts),
             )
         except InvalidProposal as exc:
             result.invalid_proposals += 1
@@ -242,7 +254,10 @@ class Orchestrator:
         self._execute(result, customer, cycle, state, proposal, gw, system=True)
         return True
 
-    def _execute(self, result, customer, cycle, state, proposal, gw, system: bool = False):
+    def _execute(
+        self, result, customer, cycle, state, proposal, gw,
+        system: bool = False, attempts: list | None = None,
+    ):
         outcome = gw.outcome
         assert outcome is not None
         action = proposal.action_type
@@ -286,6 +301,22 @@ class Orchestrator:
             resulting_recovery_state=after.recovery_state.value,
             timestamp=self.now,
         )
+
+        if attempts is not None:
+            # Purely factual: what was done, what happened, why it failed.
+            # No judgement, no recommendation -- guidance here would be a
+            # change to the agent's decision policy, not a change to its
+            # information, and would contaminate experiment 002g.
+            attempts.append(
+                {
+                    "last_action": action.value,
+                    "execution_status": (
+                        "SUCCEEDED" if outcome.amount_recovered_minor > 0 else "FAILED"
+                    ),
+                    "failure_reason": outcome.failure_code,
+                    "attempt_number": len(attempts) + 1,
+                }
+            )
 
         if outcome.result is ExecutionResult.REJECTED:
             result.errors.append(f"provider rejected {action}: {outcome.detail}")

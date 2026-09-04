@@ -29,6 +29,7 @@ class RuleBasedReasoner:
         feedback: Sequence[str] = (),
         cycle: int = 1,
         max_cycles: int = 4,
+        attempts: Sequence[dict] = (),
     ) -> ProposedAction:
         if feedback:
             # The control arm has one heuristic and no second idea. Being

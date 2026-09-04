@@ -28,6 +28,7 @@ class Reasoner(Protocol):
         feedback: Sequence[str] = (),
         cycle: int = 1,
         max_cycles: int = 4,
+        attempts: Sequence[dict] = (),
     ) -> ProposedAction:
         """Propose the next action.
 

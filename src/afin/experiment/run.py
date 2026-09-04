@@ -33,12 +33,14 @@ from afin.simulator.razorpay_sim import RazorpaySimulator
 ARMS = ("baseline", "agent")
 
 
-def build_reasoner(arm: str, profile: str, prompt: str = "control"):
+def build_reasoner(
+    arm: str, profile: str, prompt: str = "control", outcome_feedback: bool = False
+):
     if arm == "baseline":
         return RuleBasedReasoner(), None
     from afin.agent.llm import LLMReasoner
 
-    r = LLMReasoner(profile=profile, prompt=prompt)
+    r = LLMReasoner(profile=profile, prompt=prompt, outcome_feedback=outcome_feedback)
     return r, r.prompt_version
 
 
@@ -46,6 +48,7 @@ async def run_experiment(
     arm: str = "agent",
     profile: str = "gpt",
     prompt: str = "control",
+    outcome_feedback: bool = False,
     seed: int = DEFAULT_SEED,
     config: PolicyConfig = DEFAULT_POLICY_CONFIG,
     now: datetime = EPOCH,
@@ -55,7 +58,8 @@ async def run_experiment(
     engine = get_engine()
     create_schema(engine)
 
-    tag = arm if arm == "baseline" else f"{arm}-{profile}-{prompt}"
+    fb = "fb" if outcome_feedback else "nofb"
+    tag = arm if arm == "baseline" else f"{arm}-{profile}-{prompt}-{fb}"
     run_id = f"{tag}-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}-{uuid.uuid4().hex[:6]}"
 
     # Each run gets its own private copy of the dataset, generated from the same
@@ -65,7 +69,7 @@ async def run_experiment(
     # an hour per model.
     dataset_version = f"{DATASET_VERSION}:{run_id}"
     load_into(engine, generate(seed=seed, version=dataset_version))
-    reasoner, prompt_version = build_reasoner(arm, profile, prompt)
+    reasoner, prompt_version = build_reasoner(arm, profile, prompt, outcome_feedback)
     ledger = AuditLedger(engine=engine, run_id=run_id)
     ledger.open_run(
         started_at=datetime.now(timezone.utc),
@@ -78,6 +82,7 @@ async def run_experiment(
                 "temperature": getattr(reasoner, "temperature", None),
                 "reasoning_effort": getattr(reasoner, "reasoning_effort", None),
                 "api_style": getattr(getattr(reasoner, "profile", None), "api_style", None),
+                "outcome_feedback": getattr(reasoner, "outcome_feedback", None),
             }
         ),
         prompt_version=prompt_version,
@@ -224,6 +229,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run a recovery experiment.")
     parser.add_argument("--arm", choices=ARMS, default="agent")
     parser.add_argument(
+        "--outcome-feedback",
+        action="store_true",
+        help="Experiment 002g: report each executed action's factual result to "
+        "the next cycle.",
+    )
+    parser.add_argument(
         "--prompt",
         choices=("control", "treatment"),
         default="control",
@@ -250,6 +261,7 @@ def main() -> None:
             arm=args.arm,
             profile=args.profile,
             prompt=args.prompt,
+            outcome_feedback=args.outcome_feedback,
             seed=args.seed,
             limit=args.limit,
             concurrency=max(1, args.concurrency),

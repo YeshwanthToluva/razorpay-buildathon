@@ -114,6 +114,7 @@ class ProposedAction:
     #: used as a decision input, and never authoritative over it.
     claimed_opted_out: bool | None = None
     claimed_prior_successful_payments: int | None = None
+    claimed_last_attempt_outcome: str | None = None
     #: The reasoner's structured answer as JSON, kept for the audit record.
     raw_json: str | None = None
 
