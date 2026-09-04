@@ -1,0 +1,100 @@
+{
+  "actions_approved": 52,
+  "actions_denied": 14,
+  "actions_executed": 61,
+  "actions_proposed": 70,
+  "agent_errors": 0,
+  "approvals_required": 4,
+  "average_attempts_per_payment": 1.22,
+  "confidence_calibration": {
+    "0.9-1.0": {
+      "hit_rate": 0.4098360655737705,
+      "n": 61,
+      "recovered": 25
+    }
+  },
+  "context_claims_contradicted": 26,
+  "context_claims_missing": 0,
+  "context_claims_supported": 114,
+  "context_claims_total": 140,
+  "context_fidelity_rate": 0.8142857142857143,
+  "contradictions_by_field": {
+    "claimed_opted_out": 10,
+    "claimed_prior_successful_payments": 16
+  },
+  "customer_contacts": 11,
+  "denials_by_rule": {
+    "ACTION_PRECONDITION": 2,
+    "CONTACT_BUDGET": 2,
+    "RECOVERY_WINDOW_EXPIRED": 4,
+    "RETRY_COOLDOWN": 6
+  },
+  "escalations": 14,
+  "failed_interventions": 15,
+  "invalid_proposals": 0,
+  "payment_recovery_rate": 0.5,
+  "payments_processed": 50,
+  "payments_recovered": 25,
+  "policy_violations_attempted": 6,
+  "policy_violations_prevented": 6,
+  "proposals_by_action": {
+    "GENERATE_PAYMENT_LINK": 13,
+    "REQUEST_HUMAN_REVIEW": 10,
+    "RETRY_PAYMENT": 11,
+    "SCHEDULE_RETRY": 34,
+    "STOP_RECOVERY": 2
+  },
+  "recovery_by_category": {
+    "BANK_UNAVAILABLE": {
+      "at_risk_minor": 17978400,
+      "payments": 13,
+      "recovered_minor": 3838800,
+      "recovery_rate": 0.21352289413963424
+    },
+    "CARD_EXPIRED": {
+      "at_risk_minor": 2281800,
+      "payments": 4,
+      "recovered_minor": 1738000,
+      "recovery_rate": 0.7616793759312823
+    },
+    "DO_NOT_HONOR": {
+      "at_risk_minor": 5353800,
+      "payments": 11,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "FRAUD_SUSPECTED": {
+      "at_risk_minor": 2417800,
+      "payments": 3,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "INSUFFICIENT_FUNDS": {
+      "at_risk_minor": 6310700,
+      "payments": 14,
+      "recovered_minor": 4881700,
+      "recovery_rate": 0.773559193116453
+    },
+    "MANDATE_REVOKED": {
+      "at_risk_minor": 207700,
+      "payments": 1,
+      "recovered_minor": 207700,
+      "recovery_rate": 1.0
+    },
+    "PROCESSOR_ERROR": {
+      "at_risk_minor": 1358600,
+      "payments": 4,
+      "recovered_minor": 716900,
+      "recovery_rate": 0.5276755483586044
+    }
+  },
+  "recovery_rate": 0.31700028962259946,
+  "retries": 29,
+  "revenue_at_risk_minor": 35908800,
+  "revenue_recovered_minor": 11383100,
+  "revenue_recovered_per_intervention_minor": 284577.5,
+  "run_id": "agent-gpt-control-20260904T104215-72b641",
+  "stopped": 7,
+  "successful_interventions": 25,
+  "unsafe_actions_executed": 0
+}

@@ -1,0 +1,82 @@
+{
+  "actions_approved": 3,
+  "actions_denied": 0,
+  "actions_executed": 3,
+  "actions_proposed": 3,
+  "agent_errors": 0,
+  "approvals_required": 0,
+  "average_attempts_per_payment": 0.06,
+  "confidence_calibration": {
+    "0.5-0.6": {
+      "hit_rate": 1.0,
+      "n": 3,
+      "recovered": 3
+    }
+  },
+  "customer_contacts": 0,
+  "denials_by_rule": {},
+  "escalations": 0,
+  "failed_interventions": 0,
+  "invalid_proposals": 0,
+  "payment_recovery_rate": 0.06,
+  "payments_processed": 3,
+  "payments_recovered": 3,
+  "policy_violations_attempted": 0,
+  "policy_violations_prevented": 0,
+  "proposals_by_action": {
+    "RETRY_PAYMENT": 3
+  },
+  "recovery_by_category": {
+    "BANK_UNAVAILABLE": {
+      "at_risk_minor": 17978400,
+      "payments": 13,
+      "recovered_minor": 999000,
+      "recovery_rate": 0.05556668001601922
+    },
+    "CARD_EXPIRED": {
+      "at_risk_minor": 2281800,
+      "payments": 4,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "DO_NOT_HONOR": {
+      "at_risk_minor": 5353800,
+      "payments": 11,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "FRAUD_SUSPECTED": {
+      "at_risk_minor": 2417800,
+      "payments": 3,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "INSUFFICIENT_FUNDS": {
+      "at_risk_minor": 6310700,
+      "payments": 14,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "MANDATE_REVOKED": {
+      "at_risk_minor": 207700,
+      "payments": 1,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "PROCESSOR_ERROR": {
+      "at_risk_minor": 1358600,
+      "payments": 4,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    }
+  },
+  "recovery_rate": 0.027820478545648977,
+  "retries": 3,
+  "revenue_at_risk_minor": 35908800,
+  "revenue_recovered_minor": 999000,
+  "revenue_recovered_per_intervention_minor": 333000.0,
+  "run_id": "baseline-20260904T073546-15d980",
+  "stopped": 0,
+  "successful_interventions": 3,
+  "unsafe_actions_executed": 0
+}

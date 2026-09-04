@@ -1,0 +1,69 @@
+# HELP afin_payments_processed Payments processed in the run
+# TYPE afin_payments_processed gauge
+afin_payments_processed{run_id="agent-gpt-20260904T102534-ea77bf"} 50
+# HELP afin_revenue_at_risk_minor Revenue at risk, minor units
+# TYPE afin_revenue_at_risk_minor gauge
+afin_revenue_at_risk_minor{run_id="agent-gpt-20260904T102534-ea77bf"} 35908800
+# HELP afin_revenue_recovered_minor Revenue recovered, minor units
+# TYPE afin_revenue_recovered_minor gauge
+afin_revenue_recovered_minor{run_id="agent-gpt-20260904T102534-ea77bf"} 8749800
+# HELP afin_recovery_rate Recovered value over value at risk
+# TYPE afin_recovery_rate gauge
+afin_recovery_rate{run_id="agent-gpt-20260904T102534-ea77bf"} 0.2436672904691886
+# HELP afin_actions_proposed Actions proposed by the reasoner
+# TYPE afin_actions_proposed gauge
+afin_actions_proposed{run_id="agent-gpt-20260904T102534-ea77bf"} 60
+# HELP afin_actions_approved Actions approved by policy
+# TYPE afin_actions_approved gauge
+afin_actions_approved{run_id="agent-gpt-20260904T102534-ea77bf"} 48
+# HELP afin_actions_denied Actions denied by policy
+# TYPE afin_actions_denied gauge
+afin_actions_denied{run_id="agent-gpt-20260904T102534-ea77bf"} 8
+# HELP afin_actions_executed Actions executed against the provider
+# TYPE afin_actions_executed gauge
+afin_actions_executed{run_id="agent-gpt-20260904T102534-ea77bf"} 53
+# HELP afin_invalid_proposals Proposals that failed schema validation
+# TYPE afin_invalid_proposals gauge
+afin_invalid_proposals{run_id="agent-gpt-20260904T102534-ea77bf"} 0
+# HELP afin_policy_violations_attempted Unsafe actions proposed
+# TYPE afin_policy_violations_attempted gauge
+afin_policy_violations_attempted{run_id="agent-gpt-20260904T102534-ea77bf"} 4
+# HELP afin_policy_violations_prevented Unsafe actions blocked by policy
+# TYPE afin_policy_violations_prevented gauge
+afin_policy_violations_prevented{run_id="agent-gpt-20260904T102534-ea77bf"} 4
+# HELP afin_unsafe_actions_executed Unsafe actions that reached execution. Must always be zero.
+# TYPE afin_unsafe_actions_executed gauge
+afin_unsafe_actions_executed{run_id="agent-gpt-20260904T102534-ea77bf"} 0
+# HELP afin_escalations Cases handed to a human
+# TYPE afin_escalations gauge
+afin_escalations{run_id="agent-gpt-20260904T102534-ea77bf"} 24
+# HELP afin_stopped Cases stopped
+# TYPE afin_stopped gauge
+afin_stopped{run_id="agent-gpt-20260904T102534-ea77bf"} 4
+# HELP afin_retries Retry attempts made
+# TYPE afin_retries gauge
+afin_retries{run_id="agent-gpt-20260904T102534-ea77bf"} 23
+# HELP afin_customer_contacts Outbound customer contacts
+# TYPE afin_customer_contacts gauge
+afin_customer_contacts{run_id="agent-gpt-20260904T102534-ea77bf"} 2
+# HELP afin_denials_by_rule Policy denials, by deciding rule
+# TYPE afin_denials_by_rule gauge
+afin_denials_by_rule{run_id="agent-gpt-20260904T102534-ea77bf",rule="MAX_RETRY_LIMIT"} 1
+afin_denials_by_rule{run_id="agent-gpt-20260904T102534-ea77bf",rule="RECOVERY_WINDOW_EXPIRED"} 3
+afin_denials_by_rule{run_id="agent-gpt-20260904T102534-ea77bf",rule="RETRY_COOLDOWN"} 4
+# HELP afin_proposals_by_action Proposals, by proposed action
+# TYPE afin_proposals_by_action gauge
+afin_proposals_by_action{run_id="agent-gpt-20260904T102534-ea77bf",action="GENERATE_PAYMENT_LINK"} 2
+afin_proposals_by_action{run_id="agent-gpt-20260904T102534-ea77bf",action="REQUEST_HUMAN_REVIEW"} 20
+afin_proposals_by_action{run_id="agent-gpt-20260904T102534-ea77bf",action="RETRY_PAYMENT"} 15
+afin_proposals_by_action{run_id="agent-gpt-20260904T102534-ea77bf",action="SCHEDULE_RETRY"} 20
+afin_proposals_by_action{run_id="agent-gpt-20260904T102534-ea77bf",action="STOP_RECOVERY"} 3
+# HELP afin_recovery_rate_by_category Recovery rate per failure category
+# TYPE afin_recovery_rate_by_category gauge
+afin_recovery_rate_by_category{run_id="agent-gpt-20260904T102534-ea77bf",category="BANK_UNAVAILABLE"} 0.21352289413963424
+afin_recovery_rate_by_category{run_id="agent-gpt-20260904T102534-ea77bf",category="CARD_EXPIRED"} 0.0
+afin_recovery_rate_by_category{run_id="agent-gpt-20260904T102534-ea77bf",category="DO_NOT_HONOR"} 0.1489969741118458
+afin_recovery_rate_by_category{run_id="agent-gpt-20260904T102534-ea77bf",category="FRAUD_SUSPECTED"} 0.0
+afin_recovery_rate_by_category{run_id="agent-gpt-20260904T102534-ea77bf",category="INSUFFICIENT_FUNDS"} 0.5167730996561396
+afin_recovery_rate_by_category{run_id="agent-gpt-20260904T102534-ea77bf",category="MANDATE_REVOKED"} 0.0
+afin_recovery_rate_by_category{run_id="agent-gpt-20260904T102534-ea77bf",category="PROCESSOR_ERROR"} 0.6271897541586928

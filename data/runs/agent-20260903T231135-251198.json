@@ -1,0 +1,101 @@
+{
+  "actions_approved": 63,
+  "actions_denied": 17,
+  "actions_executed": 68,
+  "actions_proposed": 84,
+  "approvals_required": 4,
+  "average_attempts_per_payment": 1.36,
+  "confidence_calibration": {
+    "0.7-0.8": {
+      "hit_rate": 0.2222222222222222,
+      "n": 9,
+      "recovered": 2
+    },
+    "0.8-0.9": {
+      "hit_rate": 0.4,
+      "n": 5,
+      "recovered": 2
+    },
+    "0.9-1.0": {
+      "hit_rate": 0.42592592592592593,
+      "n": 54,
+      "recovered": 23
+    }
+  },
+  "customer_contacts": 23,
+  "denials_by_rule": {
+    "ACTION_PRECONDITION": 7,
+    "CONTACT_BUDGET": 3,
+    "RECOVERY_WINDOW_EXPIRED": 1,
+    "RETRY_COOLDOWN": 6
+  },
+  "escalations": 9,
+  "failed_interventions": 24,
+  "invalid_proposals": 0,
+  "payment_recovery_rate": 0.54,
+  "payments_processed": 50,
+  "payments_recovered": 27,
+  "policy_violations_attempted": 8,
+  "policy_violations_prevented": 8,
+  "proposals_by_action": {
+    "GENERATE_PAYMENT_LINK": 20,
+    "REQUEST_HUMAN_REVIEW": 5,
+    "RETRY_PAYMENT": 17,
+    "SCHEDULE_RETRY": 29,
+    "SEND_PAYMENT_REMINDER": 6,
+    "STOP_RECOVERY": 7
+  },
+  "recovery_by_category": {
+    "BANK_UNAVAILABLE": {
+      "at_risk_minor": 17978400,
+      "payments": 13,
+      "recovered_minor": 3838800,
+      "recovery_rate": 0.21352289413963424
+    },
+    "CARD_EXPIRED": {
+      "at_risk_minor": 2281800,
+      "payments": 4,
+      "recovered_minor": 1738000,
+      "recovery_rate": 0.7616793759312823
+    },
+    "DO_NOT_HONOR": {
+      "at_risk_minor": 5353800,
+      "payments": 11,
+      "recovered_minor": 2463200,
+      "recovery_rate": 0.4600844260151668
+    },
+    "FRAUD_SUSPECTED": {
+      "at_risk_minor": 2417800,
+      "payments": 3,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "INSUFFICIENT_FUNDS": {
+      "at_risk_minor": 6310700,
+      "payments": 14,
+      "recovered_minor": 4121700,
+      "recovery_rate": 0.6531288129684504
+    },
+    "MANDATE_REVOKED": {
+      "at_risk_minor": 207700,
+      "payments": 1,
+      "recovered_minor": 207700,
+      "recovery_rate": 1.0
+    },
+    "PROCESSOR_ERROR": {
+      "at_risk_minor": 1358600,
+      "payments": 4,
+      "recovered_minor": 852100,
+      "recovery_rate": 0.6271897541586928
+    }
+  },
+  "recovery_rate": 0.368196653745043,
+  "retries": 28,
+  "revenue_at_risk_minor": 35908800,
+  "revenue_recovered_minor": 13221500,
+  "revenue_recovered_per_intervention_minor": 259245.0980392157,
+  "run_id": "agent-20260903T231135-251198",
+  "stopped": 8,
+  "successful_interventions": 27,
+  "unsafe_actions_executed": 0
+}

@@ -1,0 +1,83 @@
+{
+  "actions_approved": 8,
+  "actions_denied": 0,
+  "actions_executed": 8,
+  "actions_proposed": 8,
+  "agent_errors": 0,
+  "approvals_required": 0,
+  "average_attempts_per_payment": 0.16,
+  "confidence_calibration": {
+    "0.5-0.6": {
+      "hit_rate": 0.75,
+      "n": 8,
+      "recovered": 6
+    }
+  },
+  "customer_contacts": 0,
+  "denials_by_rule": {},
+  "escalations": 0,
+  "failed_interventions": 2,
+  "invalid_proposals": 0,
+  "payment_recovery_rate": 0.12,
+  "payments_processed": 6,
+  "payments_recovered": 6,
+  "policy_violations_attempted": 0,
+  "policy_violations_prevented": 0,
+  "proposals_by_action": {
+    "RETRY_PAYMENT": 6,
+    "SCHEDULE_RETRY": 2
+  },
+  "recovery_by_category": {
+    "BANK_UNAVAILABLE": {
+      "at_risk_minor": 17978400,
+      "payments": 13,
+      "recovered_minor": 2975200,
+      "recovery_rate": 0.1654874738575179
+    },
+    "CARD_EXPIRED": {
+      "at_risk_minor": 2281800,
+      "payments": 4,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "DO_NOT_HONOR": {
+      "at_risk_minor": 5353800,
+      "payments": 11,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "FRAUD_SUSPECTED": {
+      "at_risk_minor": 2417800,
+      "payments": 3,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "INSUFFICIENT_FUNDS": {
+      "at_risk_minor": 6310700,
+      "payments": 14,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "MANDATE_REVOKED": {
+      "at_risk_minor": 207700,
+      "payments": 1,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    },
+    "PROCESSOR_ERROR": {
+      "at_risk_minor": 1358600,
+      "payments": 4,
+      "recovered_minor": 0,
+      "recovery_rate": 0.0
+    }
+  },
+  "recovery_rate": 0.08285434211112597,
+  "retries": 8,
+  "revenue_at_risk_minor": 35908800,
+  "revenue_recovered_minor": 2975200,
+  "revenue_recovered_per_intervention_minor": 371900.0,
+  "run_id": "baseline-20260904T074114-f6bbe7",
+  "stopped": 0,
+  "successful_interventions": 6,
+  "unsafe_actions_executed": 0
+}
