@@ -27,19 +27,33 @@ from agent_framework.openai import (
     OpenAIChatOptions,
 )
 
-from afin.agent.prompts import SYSTEM_PROMPT, USER_TEMPLATE
-from afin.agent.schema import AgentProposal, InvalidProposal, PROMPT_VERSION
+from afin.agent.prompts import (
+    SYSTEM_PROMPT,
+    SYSTEM_PROMPT_TREATMENT,
+    USER_TEMPLATE,
+    USER_TEMPLATE_TREATMENT,
+)
+from afin.agent.schema import (
+    AgentProposal,
+    InvalidProposal,
+    PROMPT_VERSION,
+    PROMPT_VERSION_TREATMENT,
+)
 from afin.config import LLMProfile, Settings
 from afin.domain.models import CustomerSnapshot, PaymentSnapshot, ProposedAction
 
 
 class LLMReasoner:
-    prompt_version = PROMPT_VERSION
-
-    def __init__(self, profile: LLMProfile | str = "gpt"):
+    def __init__(self, profile: LLMProfile | str = "gpt", prompt: str = "control"):
         if isinstance(profile, str):
             profile = Settings.profile(profile)
         self.profile = profile
+        if prompt not in ("control", "treatment"):
+            raise ValueError(f"unknown prompt arm {prompt!r}")
+        self.prompt_arm = prompt
+        self.prompt_version = (
+            PROMPT_VERSION if prompt == "control" else PROMPT_VERSION_TREATMENT
+        )
         self.model = profile.model
         self.name = f"llm:{profile.describe()}"
         self.temperature = profile.temperature
@@ -58,8 +72,15 @@ class LLMReasoner:
         )
 
     def _render(
-        self, payment: PaymentSnapshot, customer: CustomerSnapshot, now: datetime
+        self,
+        payment: PaymentSnapshot,
+        customer: CustomerSnapshot,
+        now: datetime,
+        cycle: int,
+        max_cycles: int,
     ) -> str:
+        if self.prompt_arm == "treatment":
+            return self._render_treatment(payment, customer, now, cycle, max_cycles)
         return USER_TEMPLATE.format(
             payment_id=payment.id,
             amount_minor=payment.amount_minor,
@@ -85,6 +106,54 @@ class LLMReasoner:
             lifetime_payments=customer.lifetime_payments,
             lifetime_failures=customer.lifetime_failures,
             prior_successful_payments=customer.prior_successful_payments,
+            risk_flag=customer.risk_flag,
+        )
+
+    def _render_treatment(
+        self,
+        payment: PaymentSnapshot,
+        customer: CustomerSnapshot,
+        now: datetime,
+        cycle: int,
+        max_cycles: int,
+    ) -> str:
+        from afin.domain.enums import RETRYABLE_CATEGORIES
+        from afin.policy.config import DEFAULT_POLICY_CONFIG
+
+        reusable = payment.failure_category in RETRYABLE_CATEGORIES
+        remaining = max(DEFAULT_POLICY_CONFIG.max_retries - payment.retry_count, 0)
+        return USER_TEMPLATE_TREATMENT.format(
+            payment_id=payment.id,
+            amount_minor=payment.amount_minor,
+            amount_rupees=f"Rs {payment.amount_minor / 100:,.2f}",
+            payment_state=payment.payment_state,
+            recovery_state=payment.recovery_state,
+            failure_category=payment.failure_category,
+            failure_code=payment.failure_code,
+            instrument_reusable=(
+                "yes - this instrument can be re-presented"
+                if reusable
+                else "no - this instrument is permanently unusable"
+            ),
+            is_disputed=payment.is_disputed,
+            retry_count=payment.retry_count,
+            retries_remaining=remaining,
+            contact_count=payment.contact_count,
+            cycle=cycle,
+            max_cycles=max_cycles,
+            failed_at=payment.failed_at.isoformat(),
+            last_attempt_at=(
+                payment.last_attempt_at.isoformat() if payment.last_attempt_at else "none"
+            ),
+            window_expires_at=payment.window_expires_at.isoformat(),
+            now=now.isoformat(),
+            customer_id=customer.id,
+            segment=customer.segment,
+            opted_out=customer.opted_out,
+            preferred_channel=customer.preferred_channel,
+            prior_successful_payments=customer.prior_successful_payments,
+            lifetime_payments=customer.lifetime_payments,
+            lifetime_failures=customer.lifetime_failures,
             risk_flag=customer.risk_flag,
         )
 
@@ -170,8 +239,10 @@ class LLMReasoner:
         customer: CustomerSnapshot,
         now: datetime,
         feedback: Sequence[str] = (),
+        cycle: int = 1,
+        max_cycles: int = 4,
     ) -> ProposedAction:
-        prompt = self._render(payment, customer, now)
+        prompt = self._render(payment, customer, now, cycle, max_cycles)
         if feedback:
             blocked = "\n".join(f"  - {f}" for f in feedback)
             prompt += (
@@ -179,7 +250,8 @@ class LLMReasoner:
                 f"{blocked}\n"
                 "Propose a different action, or STOP_RECOVERY if no route remains.\n"
             )
-        messages = [Message("system", SYSTEM_PROMPT), Message("user", prompt)]
+        system = SYSTEM_PROMPT if self.prompt_arm == "control" else SYSTEM_PROMPT_TREATMENT
+        messages = [Message("system", system), Message("user", prompt)]
         try:
             response = await self._request(messages)
         except ValidationError as exc:

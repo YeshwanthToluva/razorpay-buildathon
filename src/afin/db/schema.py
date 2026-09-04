@@ -137,6 +137,11 @@ audit_events = Table(
     # `reasoning_content` field (nemotron, muse-glimmer) have it read from
     # nowhere and stored nowhere.
     Column("raw_proposal_json", Text, nullable=True),
+    # Observable factual claims restated by the model, for context-fidelity
+    # measurement (experiment 002e). These are CLAIMS, not state: they are
+    # compared against the payment record, never trusted as it.
+    Column("claimed_opted_out", Boolean, nullable=True),
+    Column("claimed_prior_successful_payments", Integer, nullable=True),
     Column("policy_decision", String(24), nullable=True),
     Column("policy_rule", String(48), nullable=True),
     Column("policy_reason", Text, nullable=True),
@@ -165,4 +170,13 @@ CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_events
 DROP TRIGGER IF EXISTS audit_no_delete ON audit_events;
 CREATE TRIGGER audit_no_delete BEFORE DELETE ON audit_events
     FOR EACH ROW EXECUTE FUNCTION afin_audit_append_only();
+"""
+
+
+#: Additive migration. create_all() creates missing tables but never alters an
+#: existing one, and dropping tables is what destroyed the 002 evidence, so new
+#: columns are added in place and idempotently.
+ADDITIVE_COLUMNS_DDL = """
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_opted_out BOOLEAN;
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_prior_successful_payments INTEGER;
 """

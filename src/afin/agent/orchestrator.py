@@ -105,6 +105,8 @@ class Orchestrator:
                 reasoning_summary=proposal.reasoning_summary,
                 confidence=proposal.confidence,
                 raw_proposal_json=proposal.raw_json,
+                claimed_opted_out=proposal.claimed_opted_out,
+                claimed_prior_successful_payments=proposal.claimed_prior_successful_payments,
                 timestamp=self.now,
             )
 
@@ -168,7 +170,9 @@ class Orchestrator:
         self, payment, customer, cycle, state, result, feedback
     ) -> ProposedAction | None:
         try:
-            return await self.reasoner.propose(payment, customer, self.now, tuple(feedback))
+            return await self.reasoner.propose(
+                payment, customer, self.now, tuple(feedback), cycle, self.max_cycles
+            )
         except InvalidProposal as exc:
             result.invalid_proposals += 1
             result.errors.append(f"invalid proposal: {exc.detail}")

@@ -55,7 +55,7 @@ class HostileReasoner:
     def __init__(self):
         self.calls = 0
 
-    async def propose(self, payment, customer, now, feedback=()):
+    async def propose(self, payment, customer, now, feedback=(), cycle=1, max_cycles=4):
         self.calls += 1
         return ProposedAction(
             action="REFUND_PAYMENT" if self.calls % 2 else "WIRE_FUNDS_TO_ATTACKER",

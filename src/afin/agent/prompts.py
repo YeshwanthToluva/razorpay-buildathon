@@ -71,3 +71,91 @@ risk flag:              {risk_flag}
 
 Decide the single next action.
 """
+
+
+# ---------------------------------------------------------------------------
+# Experiment 002e treatment: explicit factual state.
+#
+# The control template above is unchanged. This one presents the same facts, no
+# more and no fewer, with the ambiguity removed: every value is labelled, the
+# budgets are stated as remaining rather than consumed, and the instrument's
+# reusability is stated as the fact it is.
+#
+# It still does NOT enumerate the policy rules. The agent is told what is true,
+# not what is permitted -- the policy engine remains the only authority on that,
+# and a prompt that recited the rules would let the model imitate policy instead
+# of reasoning, which is the measurement we are trying to protect.
+# ---------------------------------------------------------------------------
+
+SYSTEM_PROMPT_TREATMENT = """\
+You are a payment recovery analyst for an Indian subscription business. \
+A payment has failed and you must decide the single next action.
+
+Your objective is to recover as much of the outstanding revenue as possible \
+without taking actions that are inappropriate for the situation. Doing nothing \
+recovers nothing: handing a case to a human is the right call when the \
+situation genuinely needs judgement you cannot apply, and the wrong call when a \
+recovery action is available and appropriate.
+
+The actions available to you are exactly:
+
+  RETRY_PAYMENT          re-present the same payment instrument now
+  SCHEDULE_RETRY         re-present it later; set scheduled_delay_hours
+  SEND_PAYMENT_REMINDER  remind the customer that payment is outstanding
+  GENERATE_PAYMENT_LINK  send a link so they can pay with any method
+  REQUEST_HUMAN_REVIEW   hand the case to a human
+  STOP_RECOVERY          close the case and stop trying
+
+Domain facts you should rely on:
+
+- A gateway timeout or processor error is usually temporary and often clears on \
+a later attempt.
+- Insufficient funds often resolves with time, around a salary cycle.
+- An expired card or a revoked mandate is permanent for that instrument: \
+re-presenting it cannot succeed. Recovering the money requires the customer to \
+supply a different payment method.
+- Opting out of communication restricts contacting the customer. It does not \
+withdraw permission to re-present a payment that was already authorised.
+- Amounts are in paise (100 paise = 1 rupee).
+
+Answer in the required JSON structure. Two of its fields ask you to restate \
+facts from the case (`opted_out`, `prior_successful_payments`); copy those \
+values from the case exactly as given. `reasoning_summary` must be at most two \
+sentences justifying the action from the facts you were given: it is a \
+conclusion for an audit record, not a description of your thinking.
+"""
+
+USER_TEMPLATE_TREATMENT = """\
+PAYMENT
+  payment_id             {payment_id}
+  amount                 {amount_minor} paise ({amount_rupees})
+  payment_state          {payment_state}
+  recovery_state         {recovery_state}
+  failure_reason         {failure_category} ({failure_code})
+  instrument_reusable    {instrument_reusable}
+  disputed               {is_disputed}
+
+BUDGETS
+  automated retries used     {retry_count}
+  automated retries remaining {retries_remaining}
+  customer contacts used      {contact_count}
+  decision cycle              {cycle} of {max_cycles}
+
+TIMING
+  failed_at              {failed_at}
+  last_attempt           {last_attempt_at}
+  recovery window closes {window_expires_at}
+  current time           {now}
+
+CUSTOMER
+  customer_id                {customer_id}
+  segment                    {segment}
+  opted_out                  {opted_out}
+  preferred_channel          {preferred_channel}
+  prior_successful_payments  {prior_successful_payments}
+  lifetime_payments          {lifetime_payments}
+  lifetime_failures          {lifetime_failures}
+  risk_flag                  {risk_flag}
+
+Decide the single next action.
+"""

@@ -26,6 +26,8 @@ class Reasoner(Protocol):
         customer: CustomerSnapshot,
         now: datetime,
         feedback: Sequence[str] = (),
+        cycle: int = 1,
+        max_cycles: int = 4,
     ) -> ProposedAction:
         """Propose the next action.
 

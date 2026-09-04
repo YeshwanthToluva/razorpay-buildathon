@@ -15,6 +15,7 @@ from afin.domain.enums import Channel
 from afin.domain.models import ProposedAction
 
 PROMPT_VERSION = "recovery-analyst-v1"
+PROMPT_VERSION_TREATMENT = "recovery-analyst-v2-explicit-state"
 
 
 class AgentProposal(BaseModel):
@@ -37,6 +38,19 @@ class AgentProposal(BaseModel):
         default=None, description="Hours to wait. Required for SCHEDULE_RETRY."
     )
     channel: str | None = Field(default=None, description="EMAIL or SMS, if contacting.")
+    # Observable factual claims. Asked for in BOTH arms so context fidelity is
+    # measurable in each; compared against the payment record afterwards and
+    # never used as input to any decision.
+    opted_out: bool | None = Field(
+        default=None,
+        description="Restate, from the case shown to you, whether this customer "
+        "has opted out of recovery communication.",
+    )
+    prior_successful_payments: int | None = Field(
+        default=None,
+        description="Restate, from the case shown to you, how many successful "
+        "payments this customer has made previously.",
+    )
 
     def to_domain(self, payment_id: str) -> ProposedAction:
         try:
@@ -51,6 +65,8 @@ class AgentProposal(BaseModel):
             confidence=float(self.confidence),
             scheduled_delay_hours=self.scheduled_delay_hours,
             channel=channel,
+            claimed_opted_out=self.opted_out,
+            claimed_prior_successful_payments=self.prior_successful_payments,
             raw_json=self.model_dump_json(),
         )
 

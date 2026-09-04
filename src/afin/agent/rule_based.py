@@ -27,6 +27,8 @@ class RuleBasedReasoner:
         customer: CustomerSnapshot,
         now: datetime,
         feedback: Sequence[str] = (),
+        cycle: int = 1,
+        max_cycles: int = 4,
     ) -> ProposedAction:
         if feedback:
             # The control arm has one heuristic and no second idea. Being
