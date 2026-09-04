@@ -504,8 +504,8 @@ body::before{
    the value never does -- a count-up puts a false number in the first frame. */
 .settle{animation:settle 520ms cubic-bezier(.2,.75,.3,1) both}
 @keyframes settle{
-  from{opacity:0;transform:translateY(5px);filter:blur(5px)}
-  to{opacity:1;transform:none;filter:blur(0)}
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
 }
 .sside .rate{animation-delay:60ms}
 .sside.agentside .rate{animation-delay:150ms}
@@ -593,6 +593,44 @@ body::before{
   .dot{transform:none;opacity:1;transition:none}
 }
 
+
+/* hero: copy left, the boundary diagram right */
+.herogrid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(300px,.95fr);
+  gap:52px;align-items:start}
+@media (max-width:1000px){.herogrid{grid-template-columns:1fr;gap:34px}}
+.arch{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+  padding:18px 20px 16px}
+.archhead{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px}
+.node{border:1px solid var(--line);border-left:2px solid var(--line);border-radius:4px;
+  background:var(--surface-2);padding:9px 12px}
+.node .nrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.node .nname{font-size:13.5px;font-weight:600}
+.node .nverb{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted)}
+.node code{font-family:var(--mono);font-size:11.5px;color:var(--accent-ink);display:block;margin-top:4px;
+  overflow-wrap:anywhere}
+.node p{margin:5px 0 0;font-size:11.5px;color:var(--muted);line-height:1.45}
+.node p strong{color:var(--ink-2)}
+.node.agent{border-left-color:var(--muted)}
+.node.policy{border-left-color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+.node.ledger{border-left-color:var(--good)}
+.link{width:2px;height:15px;margin-left:14px;background:var(--line);position:relative}
+.link::after{content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);
+  border-left:3px solid transparent;border-right:3px solid transparent;border-top:4px solid var(--line)}
+.archfoot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);
+  font-size:11.5px;color:var(--muted);line-height:1.5}
+.archfoot code{font-family:var(--mono);font-size:11px;color:var(--warn)}
+
+/* the boundary node draws attention once, then rests */
+.node.policy{animation:boundary 900ms ease-out 400ms both}
+@keyframes boundary{
+  0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 40%,transparent)}
+  60%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 0%,transparent)}
+  100%{box-shadow:0 0 0 0 transparent}
+}
+@media (prefers-reduced-motion:reduce){.node.policy{animation:none}}
+
 footer{padding:34px 0 60px;color:var(--muted);font-size:12.5px}
 footer p{max-width:80ch;margin:0 0 8px}
 footer code{font-family:var(--mono)}
@@ -610,13 +648,56 @@ footer code{font-family:var(--mono)}
 </div></nav>
 
 <header class="hero" id="overview"><div class="wrap">
-  <div class="eyebrow">An engineering study in constrained agent autonomy</div>
-  <h1>We gave an AI agent 50 failed payments.
-    <span class="dim">Then we tried to find out whether it deserved the right to recover them.</span></h1>
-  <p class="sub">We didn't set out to prove that agents are better. We set out to measure what happens
-  when one is allowed to make financial recovery decisions — and where deterministic controls still
-  matter. Every proposal, policy decision, execution, failure and refused action is published in the
-  repository.</p>
+  <div class="herogrid">
+   <div>
+    <div class="eyebrow">An engineering study in constrained agent autonomy</div>
+    <h1>We gave an AI agent 50 failed payments.
+      <span class="dim">Then we tried to find out whether it deserved the right to recover them.</span></h1>
+    <p class="sub">We didn't set out to prove that agents are better. We set out to measure what happens
+    when one is allowed to make financial recovery decisions — and where deterministic controls still
+    matter. Every proposal, policy decision, execution, failure and refused action is published in the
+    repository.</p>
+   </div>
+
+   <aside class="arch" aria-label="System architecture">
+     <div class="archhead">How a decision reaches money</div>
+
+     <div class="node agent">
+       <div class="nrow"><span class="nname">Agent</span><span class="nverb">proposes</span></div>
+       <code>ProposedAction</code>
+       <p>Holds no database handle, no provider, no ledger.</p>
+     </div>
+     <div class="link"></div>
+
+     <div class="node policy">
+       <div class="nrow"><span class="nname">Policy</span><span class="nverb">authorizes</span></div>
+       <code>AuthorizedAction</code>
+       <p>Pure and deterministic. This object can be minted <strong>only here</strong>.</p>
+     </div>
+     <div class="link"></div>
+
+     <div class="node">
+       <div class="nrow"><span class="nname">Gateway</span><span class="nverb">the only route out</span></div>
+       <code>requires AuthorizedAction</code>
+     </div>
+     <div class="link"></div>
+
+     <div class="node">
+       <div class="nrow"><span class="nname">Simulator</span><span class="nverb">executes</span></div>
+       <code>ProviderOutcome</code>
+       <p>Seeded. Opens no sockets. No real transaction was ever made.</p>
+     </div>
+     <div class="link"></div>
+
+     <div class="node ledger">
+       <div class="nrow"><span class="nname">Ledger</span><span class="nverb">records</span></div>
+       <code>append-only</code>
+     </div>
+
+     <div class="archfoot">Each arrow is a type the previous stage cannot fabricate. Skipping the
+     boundary raises <code>PolicyBypassError</code> rather than moving funds.</div>
+   </aside>
+  </div>
 
   <div class="score" id="score"></div>
   <div class="hook" id="hook"></div>
