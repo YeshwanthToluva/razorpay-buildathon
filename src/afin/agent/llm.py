@@ -36,13 +36,13 @@ from afin.domain.models import CustomerSnapshot, PaymentSnapshot, ProposedAction
 class LLMReasoner:
     prompt_version = PROMPT_VERSION
 
-    def __init__(self, profile: LLMProfile | str = "gpt", temperature: float = 0.0):
+    def __init__(self, profile: LLMProfile | str = "gpt"):
         if isinstance(profile, str):
             profile = Settings.profile(profile)
         self.profile = profile
         self.model = profile.model
         self.name = f"llm:{profile.describe()}"
-        self.temperature = temperature
+        self.temperature = profile.temperature
         self.reasoning_effort = profile.reasoning_effort
         #: Transient provider faults absorbed by _request during this run.
         self.retries = 0
@@ -107,6 +107,20 @@ class LLMReasoner:
                 return code
         return None
 
+    def _options(self) -> dict:
+        """Request options, omitting anything the profile did not ask for.
+
+        Optional parameters are not free to send. LiteLLM rejects
+        temperature=0.0 alongside reasoning_effort on gpt-5 models with a 400,
+        so sending both unconditionally broke every request to that gateway.
+        """
+        opts: dict = {"response_format": AgentProposal}
+        if self.temperature is not None:
+            opts["temperature"] = self.temperature
+        if self.reasoning_effort:
+            opts["reasoning_effort"] = self.reasoning_effort
+        return opts
+
     async def _pace(self) -> None:
         """Hold requests to the profile's minimum interval.
 
@@ -137,14 +151,7 @@ class LLMReasoner:
             await self._pace()
             try:
                 return await self._client.get_response(
-                    messages,
-                    options=self._options_cls(
-                        response_format=AgentProposal,
-                        temperature=self.temperature,
-                        # Options are a plain dict, so this reaches the request
-                        # body for providers that read it; others ignore it.
-                        reasoning_effort=self.reasoning_effort,
-                    ),
+                    messages, options=self._options_cls(**self._options())
                 )
             except ValidationError:
                 raise

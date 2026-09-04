@@ -47,7 +47,12 @@ class LLMProfile:
     #: recovery action is a small structured decision, and higher effort buys
     #: latency across 50 payments rather than better action selection. It is a
     #: profile setting, and recorded on the run, so it can be varied on purpose.
-    reasoning_effort: str = "low"
+    #: Sent only when non-empty. Providers differ on what they accept, and a
+    #: parameter a gateway rejects is a 400 for every request, so nothing
+    #: optional is sent unless a profile asks for it.
+    reasoning_effort: str = ""
+    #: Sent only when set. None means "provider default".
+    temperature: float | None = None
     #: Minimum seconds between request starts for this profile. Free tiers
     #: throttle aggressively, and discovering the limit by taking a 429 and
     #: backing off wastes far more wall-clock than simply not exceeding it.
@@ -85,7 +90,8 @@ class Settings:
         base_url = os.environ.get(prefix + "BASE_URL", "")
         model = os.environ.get(prefix + "MODEL", "")
         api_style = os.environ.get(prefix + "API_STYLE", "chat_completions")
-        reasoning_effort = os.environ.get(prefix + "REASONING_EFFORT", "low")
+        reasoning_effort = os.environ.get(prefix + "REASONING_EFFORT", "").strip()
+        temp_raw = os.environ.get(prefix + "TEMPERATURE", "").strip()
         min_interval = float(os.environ.get(prefix + "MIN_INTERVAL_SECONDS", "0") or 0)
         if not (api_key and model):
             raise UnknownProfile(
@@ -100,5 +106,6 @@ class Settings:
             model=model,
             api_style=api_style,
             reasoning_effort=reasoning_effort,
+            temperature=float(temp_raw) if temp_raw else None,
             min_interval_seconds=min_interval,
         )
