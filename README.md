@@ -3,6 +3,9 @@
 **We gave an AI agent 50 failed payments. Then we tried to find out whether it
 deserved the right to recover them.**
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/12a8343b-6518-44c7-8c5d-5ff67bdb286e" />
+
+
 A reproducible experiment in agentic financial operations. Every proposal, policy
 decision, execution, failure and refused action is committed to this repository.
 
@@ -95,6 +98,7 @@ docs/
 
 The dataset manifest pins `seed 20260304` and `sha256 ff25509a45e0…`;
 regenerating it must reproduce that hash.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1defc2e7-f15a-4525-b664-14de7824f0b8" />
 
 ## Reproduce
 
