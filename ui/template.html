@@ -428,6 +428,61 @@ details.ev .body code{color:var(--accent-ink);overflow-wrap:anywhere}
 .thesis blockquote .b{color:var(--muted);display:block}
 .thesis .attrib{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:16px}
 
+
+/* ---------------------------------------------------------------
+   Motion policy: animation is only allowed to encode a measurement
+   (a bar reaching its value, a number counting to it) or to answer a
+   pointer. Nothing fades in on scroll; every figure is legible at rest,
+   because the first still frame is what a skimming reviewer gets.
+   --------------------------------------------------------------- */
+
+/* graph-paper ground — an instrument surface, not ornament */
+body{
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size:34px 34px;
+  background-position:-1px -1px;
+  background-attachment:fixed;
+}
+.wrap>*{position:relative}
+header.hero,section{background:
+  linear-gradient(to bottom, color-mix(in srgb,var(--bg) 78%,transparent),
+                             color-mix(in srgb,var(--bg) 78%,transparent))}
+
+/* bars grow to their value once, on load */
+.ltrack i,.bar i,.abrow .track i{
+  width:var(--w,0);
+  transition:width 420ms cubic-bezier(.22,.8,.28,1);
+}
+.armbar i{transition:width 420ms cubic-bezier(.22,.8,.28,1)}
+
+/* recovery bar inside the experiments table */
+.armbar{height:5px;width:104px;background:var(--surface-2);border-radius:2px;overflow:hidden;
+  display:inline-block;vertical-align:middle;margin-left:9px}
+.armbar i{display:block;height:100%;background:var(--good);border-radius:2px;width:var(--w,0)}
+tr.base .armbar i{background:var(--accent)}
+td.recovery{white-space:nowrap}
+
+/* pointer answers */
+tbody tr,.pitem,.divrow,.evcard,.brow{transition:background 140ms ease, transform 140ms ease}
+.evcard:hover{background:var(--surface-2)}
+.divrow:hover{background:var(--surface-2)}
+.pitem[aria-selected="true"]{transition:none}
+.stage{transition:border-color 160ms ease}
+.cyclestrip:hover .stage{border-color:var(--line)}
+details.ev .body{animation:drawer 200ms cubic-bezier(.22,.8,.28,1)}
+@keyframes drawer{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* the zero holds a steady ring rather than pulsing */
+.hook .z,.safety .big{position:relative}
+
+@media (prefers-reduced-motion:reduce){
+  .ltrack i,.bar i,.abrow .track i,.armbar i{transition:none!important;width:var(--w,auto)}
+  details.ev .body{animation:none}
+  body{background-attachment:scroll}
+}
+
 footer{padding:34px 0 60px;color:var(--muted);font-size:12.5px}
 footer p{max-width:80ch;margin:0 0 8px}
 footer code{font-family:var(--mono)}
@@ -609,6 +664,24 @@ const base = D.arms.find(a => a.is_baseline);
 const agents = D.arms.filter(a => !a.is_baseline);
 const bestAgent = agents.reduce((a,b) => a.metrics.recovery_rate >= b.metrics.recovery_rate ? a : b);
 
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---- motion: set every bar's width after first paint so it grows to value.
+   Widths are recorded on the element, so reduced-motion still lands on them. ---- */
+const BARS = [];
+function bar_(node, widthPct){ return bar(node, widthPct); }
+function bar(node, widthPct){
+  node.style.setProperty('--w', widthPct + '%');
+  if(!REDUCED) node.style.width = '0%';   // grown to --w on the next frame
+  BARS.push([node, widthPct]);
+  return node;
+}
+function settleBars(){
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    BARS.forEach(([n,w]) => { n.style.width = w + '%'; });
+  }));
+}
+
 /* ---- evidence drawer helper: every claim names its source file ---- */
 function evidence(rows){
   const d = el('details','ev');
@@ -663,7 +736,7 @@ ladder.innerHTML = '<div class="cap"><span>Recovery against the same 50 payments
   const row = el('div','lrow');
   row.append(el('div','lab', lab + '<small>' + sub + '</small>'));
   const track = el('div','ltrack');
-  const bar = el('i', cls); bar.style.width = (val/atRisk*100) + '%'; track.append(bar);
+  track.append(bar(el('i', cls), val/atRisk*100));
   if(rate !== null) track.append(el('span','', pct(rate)));
   row.append(track);
   row.append(el('div','val', rupee(val)));
@@ -731,7 +804,11 @@ D.arms.forEach(a => {
   const name = el('td','', '<span class="armname">'+a.label+'</span><span class="armnote">'+a.note+'</span>');
   tr.append(name);
   const fid = m.context_fidelity_rate ? pct(m.context_fidelity_rate) : '—';
-  [pct(m.recovery_rate), (m.revenue_recovered_minor/100).toLocaleString('en-IN'),
+  const rc = el('td','n recovery');
+  rc.innerHTML = pct(m.recovery_rate);
+  const ab2 = el('span','armbar'); ab2.append(bar(el('i'), m.recovery_rate*100)); rc.append(ab2);
+  tr.append(rc);
+  [(m.revenue_recovered_minor/100).toLocaleString('en-IN'),
    m.payments_recovered, m.actions_proposed, m.actions_denied, m.retries,
    m.escalations, m.stopped, fid].forEach(v => tr.append(el('td','n',String(v))));
   tr.append(el('td','n','<span class="pill zero">'+m.unsafe_actions_executed+'</span>'));
@@ -780,9 +857,7 @@ function renderDivergence(){
     const bar = el('div','bar');
     bar.append(el('span','mid'));
     if(!zero){
-      const i = el('i', gain?'pos':'neg');
-      i.style.width = (Math.abs(v.delta)/max*50) + '%';
-      bar.append(i);
+      bar.append(bar_(el('i', gain?'pos':'neg'), Math.abs(v.delta)/max*50));
     }
     row.append(bar);
     row.append(el('div','amt', zero ? '—' : (gain?'+':'−') + rupee(Math.abs(v.delta))));
@@ -973,7 +1048,7 @@ D.arms.forEach(a => {
   const n = a.metrics.policy_violations_attempted||0;
   const row = el('div','abrow');
   row.append(el('div','n', a.label));
-  const tr = el('div','track'); const i = el('i'); i.style.width = (n/maxAtt*100)+'%'; tr.append(i);
+  const tr = el('div','track'); tr.append(bar(el('i'), n/maxAtt*100));
   row.append(tr, el('div','v', String(n)));
   ab.append(row);
 });
@@ -1022,6 +1097,9 @@ EV.forEach(([n,l,src]) => {
   eg.append(c);
 });
 
+
+settleBars();
 </script>
 </body>
 </html>
+
