@@ -180,3 +180,76 @@ def divergence_report(baseline_path: str, agent_path: str) -> str:
     total = sum(v["delta"] for v in buckets.values())
     lines.append(f"{'TOTAL':<38}{len(shared):>4}{total/100:>16,.0f}")
     return "\n".join(lines), buckets
+
+
+# --------------------------------------------------------------------------
+# Experiment 002e — control vs treatment comparison
+# --------------------------------------------------------------------------
+
+CONTEXT_FIELDS = ("claimed_opted_out", "claimed_prior_successful_payments")
+
+
+def context_fidelity(ledger_path: str) -> dict:
+    """Score restated facts against the state the model was shown. Deterministic."""
+    import json as _json
+
+    led = load_ledger(ledger_path)
+    counts = {"total": 0, "supported": 0, "contradicted": 0, "missing": 0, "by_field": {}}
+    for e in led["audit_events"]:
+        if e["event_type"] != "PROPOSAL_MADE":
+            continue
+        observed = _json.loads(e["observed_state_json"])["customer"]
+        for claim, actual_key in (
+            ("claimed_opted_out", "opted_out"),
+            ("claimed_prior_successful_payments", "prior_successful_payments"),
+        ):
+            counts["total"] += 1
+            claimed = e.get(claim)
+            if claimed is None:
+                counts["missing"] += 1
+            elif claimed == observed[actual_key]:
+                counts["supported"] += 1
+            else:
+                counts["contradicted"] += 1
+                counts["by_field"][claim] = counts["by_field"].get(claim, 0) + 1
+    counts["fidelity_rate"] = (
+        counts["supported"] / counts["total"] if counts["total"] else 0.0
+    )
+    return counts
+
+
+def action_mix(ledger_path: str, scenarios: tuple[str, ...] | None = None) -> dict:
+    """Count proposed actions, optionally restricted to named scenarios."""
+    pp = per_payment(load_ledger(ledger_path))
+    mix: dict = {}
+    revenue = 0
+    for v in pp.values():
+        if scenarios and v["scenario"] not in scenarios:
+            continue
+        revenue += v["rev"]
+        for a in v["acts"]:
+            mix[a] = mix.get(a, 0) + 1
+    mix["_revenue_minor"] = revenue
+    return mix
+
+
+def compare_arms(baseline: str, arms: dict[str, str]) -> str:
+    """Divergence classes and context fidelity, side by side."""
+    lines = []
+    results = {name: divergence_report(baseline, path)[1] for name, path in arms.items()}
+    classes = sorted({k for r in results.values() for k in r})
+    lines.append(f"{'class':<38}" + "".join(f"{n[:16]:>18}" for n in arms))
+    for k in classes:
+        lines.append(
+            f"{k:<38}"
+            + "".join(
+                f"{results[n].get(k, {'n': 0})['n']:>7} /{results[n].get(k, {'delta': 0})['delta']/100:>9,.0f}"
+                for n in arms
+            )
+        )
+    lines.append("")
+    lines.append(f"{'context fidelity':<38}" + "".join(
+        f"{context_fidelity(p)['fidelity_rate']:>17.1%}" for p in arms.values()))
+    lines.append(f"{'context contradictions':<38}" + "".join(
+        f"{context_fidelity(p)['contradicted']:>17}" for p in arms.values()))
+    return "\n".join(lines)

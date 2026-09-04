@@ -33,17 +33,19 @@ from afin.simulator.razorpay_sim import RazorpaySimulator
 ARMS = ("baseline", "agent")
 
 
-def build_reasoner(arm: str, profile: str):
+def build_reasoner(arm: str, profile: str, prompt: str = "control"):
     if arm == "baseline":
         return RuleBasedReasoner(), None
     from afin.agent.llm import LLMReasoner
 
-    return LLMReasoner(profile=profile), PROMPT_VERSION
+    r = LLMReasoner(profile=profile, prompt=prompt)
+    return r, r.prompt_version
 
 
 async def run_experiment(
     arm: str = "agent",
     profile: str = "gpt",
+    prompt: str = "control",
     seed: int = DEFAULT_SEED,
     config: PolicyConfig = DEFAULT_POLICY_CONFIG,
     now: datetime = EPOCH,
@@ -53,7 +55,7 @@ async def run_experiment(
     engine = get_engine()
     create_schema(engine)
 
-    tag = arm if arm == "baseline" else f"{arm}-{profile}"
+    tag = arm if arm == "baseline" else f"{arm}-{profile}-{prompt}"
     run_id = f"{tag}-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}-{uuid.uuid4().hex[:6]}"
 
     # Each run gets its own private copy of the dataset, generated from the same
@@ -63,7 +65,7 @@ async def run_experiment(
     # an hour per model.
     dataset_version = f"{DATASET_VERSION}:{run_id}"
     load_into(engine, generate(seed=seed, version=dataset_version))
-    reasoner, prompt_version = build_reasoner(arm, profile)
+    reasoner, prompt_version = build_reasoner(arm, profile, prompt)
     ledger = AuditLedger(engine=engine, run_id=run_id)
     ledger.open_run(
         started_at=datetime.now(timezone.utc),
@@ -161,6 +163,9 @@ def report(metrics) -> str:
         "",
         f"  actions proposed            {m.actions_proposed}",
         f"  invalid proposals           {m.invalid_proposals}",
+        f"  context fidelity            {m.context_fidelity_rate:.1%}"
+        f"  ({m.context_claims_supported}/{m.context_claims_total} supported, "
+        f"{m.context_claims_contradicted} contradicted, {m.context_claims_missing} missing)",
         f"  provider errors             {m.agent_errors}",
         f"  approved                    {m.actions_approved}",
         f"  denied                      {m.actions_denied}",
@@ -219,6 +224,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run a recovery experiment.")
     parser.add_argument("--arm", choices=ARMS, default="agent")
     parser.add_argument(
+        "--prompt",
+        choices=("control", "treatment"),
+        default="control",
+        help="Prompt arm for experiment 002e. Ignored for the baseline arm.",
+    )
+    parser.add_argument(
         "--profile",
         default="gpt",
         help="LLM profile from .env (AFIN_LLM_PROFILES). Ignored for the baseline arm.",
@@ -238,6 +249,7 @@ def main() -> None:
         run_experiment(
             arm=args.arm,
             profile=args.profile,
+            prompt=args.prompt,
             seed=args.seed,
             limit=args.limit,
             concurrency=max(1, args.concurrency),

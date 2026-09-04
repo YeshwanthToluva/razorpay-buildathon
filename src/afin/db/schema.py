@@ -28,7 +28,7 @@ metadata = MetaData()
 datasets = Table(
     "datasets",
     metadata,
-    Column("dataset_version", String(64), primary_key=True),
+    Column("dataset_version", String(128), primary_key=True),
     Column("seed", Integer, nullable=False),
     Column("generated_at", DateTime(timezone=True), nullable=False),
     Column("manifest_sha256", String(64), nullable=False),
@@ -39,7 +39,7 @@ customers = Table(
     "customers",
     metadata,
     Column("id", String(32), nullable=False),
-    Column("dataset_version", String(64), ForeignKey("datasets.dataset_version"), nullable=False),
+    Column("dataset_version", String(128), ForeignKey("datasets.dataset_version"), nullable=False),
     Column("segment", String(32), nullable=False),
     Column("opted_out", Boolean, nullable=False, default=False),
     Column("preferred_channel", String(16), nullable=False),
@@ -56,7 +56,7 @@ payments = Table(
     "payments",
     metadata,
     Column("id", String(32), nullable=False),
-    Column("dataset_version", String(64), ForeignKey("datasets.dataset_version"), nullable=False),
+    Column("dataset_version", String(128), ForeignKey("datasets.dataset_version"), nullable=False),
     Column("customer_id", String(32), nullable=False),
     Column("invoice_id", String(32), nullable=False),
     Column("amount_minor", BigInteger, nullable=False),
@@ -91,10 +91,10 @@ runs = Table(
     Column("reasoner", String(64), nullable=False),
     Column("model", String(64), nullable=True),
     Column("model_config_json", Text, nullable=True),
-    Column("prompt_version", String(32), nullable=True),
+    Column("prompt_version", String(64), nullable=True),
     Column("policy_version", String(32), nullable=False),
     Column("policy_fingerprint", String(32), nullable=False),
-    Column("dataset_version", String(64), nullable=False),
+    Column("dataset_version", String(128), nullable=False),
     Column("random_seed", Integer, nullable=False),
     Column("notes", Text, nullable=True),
 )
@@ -179,4 +179,11 @@ CREATE TRIGGER audit_no_delete BEFORE DELETE ON audit_events
 ADDITIVE_COLUMNS_DDL = """
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_opted_out BOOLEAN;
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_prior_successful_payments INTEGER;
+-- Widened in place for experiment 002e: prompt version names outgrew 32 chars.
+-- Widening a varchar never rewrites or loses data.
+ALTER TABLE runs ALTER COLUMN prompt_version TYPE VARCHAR(64);
+ALTER TABLE runs ALTER COLUMN dataset_version TYPE VARCHAR(128);
+ALTER TABLE payments ALTER COLUMN dataset_version TYPE VARCHAR(128);
+ALTER TABLE customers ALTER COLUMN dataset_version TYPE VARCHAR(128);
+ALTER TABLE datasets ALTER COLUMN dataset_version TYPE VARCHAR(128);
 """
