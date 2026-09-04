@@ -48,6 +48,7 @@ async def run_experiment(
     config: PolicyConfig = DEFAULT_POLICY_CONFIG,
     now: datetime = EPOCH,
     limit: int | None = None,
+    concurrency: int = 1,
 ) -> tuple[str, object]:
     engine = get_engine()
     create_schema(engine)
@@ -98,19 +99,36 @@ async def run_experiment(
     if limit:
         cases = cases[:limit]
 
-    print(f"run {run_id}: {len(cases)} payments, reasoner={reasoner.name}")
-    for i, (payment, customer) in enumerate(cases, 1):
-        result = await orchestrator.run_case(payment, customer)
+    print(
+        f"run {run_id}: {len(cases)} payments, reasoner={reasoner.name}, "
+        f"concurrency={concurrency}"
+    )
+
+    # Cases are independent -- each owns its own payment row -- so they may run
+    # concurrently. This matters under a rate-limited provider: serially, one
+    # case sitting in backoff stalls the whole sweep and a 50-payment arm takes
+    # hours. Overlapping the waits recovers most of that without issuing a
+    # single extra request.
+    semaphore = asyncio.Semaphore(concurrency)
+    done = 0
+
+    async def run_one(payment, customer):
+        nonlocal done
+        async with semaphore:
+            result = await orchestrator.run_case(payment, customer)
+        done += 1
         flag = "*" if result.recovered_minor else " "
         print(
-            f"  [{i:>2}/{len(cases)}] {payment.id} {payment.scenario_tag:<26} "
+            f"  [{done:>2}/{len(cases)}] {payment.id} {payment.scenario_tag:<26} "
             f"{result.payment.payment_state.value:<11} "
             f"{flag}Rs{result.recovered_minor / 100:>10,.2f}  "
             f"proposed={result.proposals} denied={result.denied} exec={result.executed}"
         )
-        if result.errors:
-            for err in result.errors:
-                print(f"        ! {err}")
+        for err in result.errors:
+            print(f"        ! {err}")
+        return result
+
+    await asyncio.gather(*(run_one(p, c) for p, c in cases))
 
     ledger.close_run()
     metrics = compute(engine, run_id, dataset_version)
@@ -204,6 +222,13 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=6,
+        help="Cases in flight at once. Overlaps provider backoff; it does "
+        "not increase the number of requests issued.",
+    )
     args = parser.parse_args()
 
     _, metrics = asyncio.run(
@@ -212,6 +237,7 @@ def main() -> None:
             profile=args.profile,
             seed=args.seed,
             limit=args.limit,
+            concurrency=max(1, args.concurrency),
         )
     )
     print(report(metrics))
