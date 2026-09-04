@@ -1,0 +1,12 @@
+# ui/index.html is build output: ui/template.html with the evidence payload
+# (analysis/console_data.json) injected by analysis/build_ui.py. It is committed
+# so the console opens straight from a clone, but it is not authored source and
+# should not count toward language statistics or clutter diffs.
+ui/index.html linguist-generated=true
+
+# Committed evidence, not code. Kept visible and diffable, but it is data.
+data/** linguist-generated=true
+
+# Experiment records and decision records are the point of the repository, so
+# make sure they are recognised as documentation rather than ignored.
+docs/** linguist-documentation=true
