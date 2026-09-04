@@ -79,3 +79,104 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# --------------------------------------------------------------------------
+# Per-payment divergence classification (Experiment 002a)
+# --------------------------------------------------------------------------
+
+import re  # noqa: E402
+
+#: Highest-probability action per failure category, read off the simulator's
+#: published physics. This is the objective notion of "correct action" -- it is
+#: the simulator's own model, not a judgement call.
+OPTIMAL = {
+    "BANK_UNAVAILABLE": "SCHEDULE_RETRY",
+    "PROCESSOR_ERROR": "RETRY_PAYMENT",
+    "INSUFFICIENT_FUNDS": "SCHEDULE_RETRY",
+    "DO_NOT_HONOR": "GENERATE_PAYMENT_LINK",
+    "CARD_EXPIRED": "GENERATE_PAYMENT_LINK",
+    "MANDATE_REVOKED": "GENERATE_PAYMENT_LINK",
+    "FRAUD_SUSPECTED": "REQUEST_HUMAN_REVIEW",
+}
+
+
+def load_ledger(path):
+    import json as _json
+    return _json.loads(pathlib.Path(path).read_text())
+
+
+def per_payment(ledger: dict) -> dict:
+    import json as _json
+    out: dict = {}
+    for e in ledger["audit_events"]:
+        p = out.setdefault(
+            e["payment_id"],
+            {"acts": [], "denied": [], "rev": 0, "final": None, "invalid": 0,
+             "scenario": None, "category": None, "amount": 0},
+        )
+        t = e["event_type"]
+        if t == "CASE_OPENED":
+            st = _json.loads(e["observed_state_json"])["payment"]
+            p["scenario"], p["category"] = st["scenario_tag"], st["failure_category"]
+            p["amount"] = st["amount_minor"]
+        elif t == "PROPOSAL_MADE":
+            p["acts"].append(e["proposed_action"])
+        elif t == "POLICY_EVALUATED" and e["policy_decision"] != "ALLOW":
+            p["denied"].append((e["proposed_action"], e["policy_decision"], e["policy_rule"]))
+        elif t == "ACTION_EXECUTED":
+            p["rev"] += e["revenue_recovered_minor"] or 0
+        elif t == "PROPOSAL_INVALID":
+            p["invalid"] += 1
+        elif t == "CASE_CLOSED":
+            p["final"] = e["resulting_recovery_state"]
+    return out
+
+
+def classify(pid: str, b: dict, a: dict) -> str:
+    """Reason for the divergence on one payment. Baseline `b` vs agent `a`."""
+    delta = a["rev"] - b["rev"]
+    escalated = "REQUEST_HUMAN_REVIEW" in a["acts"]
+    stopped = "STOP_RECOVERY" in a["acts"]
+    optimal = OPTIMAL.get(a["category"])
+
+    if a["invalid"]:
+        return "execution_failure"
+    if delta == 0 and b["rev"] > 0:
+        return "correct_diagnosis_correct_action"
+    if delta == 0 and b["rev"] == 0:
+        # Neither recovered. Distinguish policy doing its job from joint failure.
+        if any(d[2] in ("DISPUTE_BLOCK", "FRAUD_HOLD", "RECOVERY_WINDOW_EXPIRED")
+               or d[1] == "REQUIRE_APPROVAL" for d in a["denied"] + b["denied"]) or not a["acts"]:
+            return "policy_blocked_correctly"
+        return "both_failed"
+    if delta > 0:
+        return "agent_better"
+    # Agent lost money relative to baseline.
+    if escalated:
+        return "excessive_escalation"
+    if stopped:
+        return "premature_stopping"
+    if optimal and optimal not in a["acts"]:
+        return "correct_diagnosis_suboptimal_action"
+    return "other"
+
+
+def divergence_report(baseline_path: str, agent_path: str) -> str:
+    b_all, a_all = per_payment(load_ledger(baseline_path)), per_payment(load_ledger(agent_path))
+    shared = sorted(set(b_all) & set(a_all))
+    buckets: dict = {}
+    for pid in shared:
+        b, a = b_all[pid], a_all[pid]
+        k = classify(pid, b, a)
+        e = buckets.setdefault(k, {"n": 0, "delta": 0, "payments": []})
+        e["n"] += 1
+        e["delta"] += a["rev"] - b["rev"]
+        e["payments"].append(pid)
+
+    lines = [f"{'class':<38}{'n':>4}{'revenue delta':>16}"]
+    for k, v in sorted(buckets.items(), key=lambda kv: kv[1]["delta"]):
+        lines.append(f"{k:<38}{v['n']:>4}{v['delta']/100:>16,.0f}")
+    total = sum(v["delta"] for v in buckets.values())
+    lines.append(f"{'TOTAL':<38}{len(shared):>4}{total/100:>16,.0f}")
+    return "\n".join(lines), buckets

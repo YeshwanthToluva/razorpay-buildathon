@@ -13,8 +13,9 @@ The agent recovers less than the rule set because it **escalates more**, and
 escalation is terminal at Autonomy Level 2 (no human signs off), so every
 escalation closes a case at zero recovered.
 
-**Verdict: supported, and it is the single largest mechanism — but it accounts
-for roughly half the gap, not all of it.**
+**Verdict: supported, and stronger than first estimated. Per-payment evidence
+(§10) attributes 94.6% of the revenue gap to escalation — not the ~55% the
+aggregate-only counterfactual in §4 suggested. The §4 figure is superseded.**
 
 ---
 
@@ -26,9 +27,15 @@ Validity was enforced by `run_is_valid`, which rejects runs whose
 provider-error rate exceeds 10% or whose dataset-derived metrics disagree with
 their own run-scoped evidence.
 
-### Limitation that must be stated first
+### Limitation (resolved by 002a — see §10)
 
-**The per-payment audit trail for all three valid agent runs no longer exists.**
+At first writing, the per-payment audit trail for every valid agent run had been
+destroyed and only aggregate metrics survived. Experiment 002a regenerated it
+under an identical configuration; §10 supersedes the aggregate-only reasoning
+where the two differ. The original limitation is kept below because it explains
+why §3–§9 are aggregate-level.
+
+**The per-payment audit trail for the three original valid agent runs no longer exists.**
 The schema was dropped during development, and `DROP TABLE` bypasses the
 append-only triggers that were supposed to make the ledger immutable. What
 survives for those runs is the aggregate metrics JSON.
@@ -190,3 +197,107 @@ In the order the evidence justifies:
 Deliberately **not** proposed yet: memory, tools, MCP, higher autonomy. None of
 those can be interpreted while escalation is terminal and the API confound is
 unsized.
+
+
+---
+
+# 10. Experiment 002a — per-payment divergence (definitive)
+
+**Run:** `agent-gpt-20260904T102534-ea77bf` — gpt-5.4-mini, chat completions,
+temperature 0.0, `policy-v1` `ce95966c6cf1b196`, `synthetic-v1`, seed 20260304,
+`MAX_CYCLES=4`. 50/50 cases, **0 provider errors, 0 invalid proposals**.
+Recovery **24.4%** (₹87,498), 24 escalations — consistent with the 19.2% and
+22.3% runs it was run to explain.
+
+Ledgers for both arms are exported to `data/ledger/*.json`, so this evidence
+survives a schema drop. Reproduce with `analysis/divergence.py`.
+
+## 10.1 Divergence classification, all 50 payments
+
+| class | n | revenue delta |
+|---|---:|---:|
+| **excessive_escalation** | **15** | **−66,429** |
+| premature_stopping | 1 | −8,628 |
+| correct_diagnosis_correct_action | 17 | 0 |
+| policy_blocked_correctly | 10 | 0 |
+| both_failed | 6 | 0 |
+| **agent_better** | **1** | **+4,833** |
+| **TOTAL** | 50 | **−70,224** |
+
+"Correct action" is not a judgement call: it is the highest-probability action
+for each failure category read off the simulator's own published physics.
+
+**Escalation accounts for ₹66,429 of the ₹70,224 gap — 94.6%.** Every other
+mechanism combined accounts for less than 6%. On 33 of 50 payments the agent
+matched the baseline exactly or was correctly blocked by policy.
+
+## 10.2 Why it escalates — two distinct root causes
+
+**(a) Correct diagnosis, then the wrong action.** On `CARD_EXPIRED` the agent
+reasons precisely: *"a permanent instrument issue rather than a transient
+gateway problem... unlikely to recover without a new payment method."* That is
+exactly right, and `GENERATE_PAYMENT_LINK` is the action that supplies a new
+payment method. It escalated anyway. **Across dead-instrument categories
+(`CARD_EXPIRED`, `MANDATE_REVOKED`, `DO_NOT_HONOR`), 11 of 14 proposals (79%)
+escalated instead of sending a link.** This is action selection, not diagnosis.
+
+**(b) The agent hallucinates the context it was shown.** Of 60 proposals, it
+claimed the customer had opted out 4 times when they had not, and claimed no
+prior successful payments 7 times when there were (16, 17, 20 successes in the
+observed state it was given). **9 of those 11 false-premise proposals escalated
+or stopped.** It invents precisely the two facts that would justify caution,
+then acts on them:
+
+| payment | actual opted_out | actual prior successes | agent asserted |
+|---|---|---:|---|
+| pay_0009 | False | 17 | "opted out of contact", "no prior successful payments" |
+| pay_0030 | True | 16 | "no prior successes" |
+| pay_0031 | True | 20 | "no prior successes" |
+| pay_0043 | False | 5 | "already opted out of contact" |
+
+**(c) Opt-out is conflated with permission to charge.** On pay_0043:
+*"With no permission to retry or message, recovery should be stopped."* Opting
+out of communication does not withdraw permission to re-present a payment — the
+policy engine encodes this correctly and permits silent retries, and the
+baseline recovers ₹11,703 across the opt-out scenario by doing exactly that.
+The agent stopped instead.
+
+## 10.3 Where the agent was better
+
+**pay_0033, +₹4,833.** The baseline had spent its retry budget and wrote the
+case off; the agent proposed `SCHEDULE_RETRY` on an `INSUFFICIENT_FUNDS`
+failure, reasoning that it "is often temporary and may resolve later." It was
+right. This is the one case in the dataset where judgment beat the lookup table,
+and it is preserved as a finding: the agent's upside is timing on soft declines.
+
+## 10.4 Revised ranking of causes
+
+1. **Escalation as a substitute for an available remedy** — 94.6% of the gap.
+   Terminal at Level 2, so caution converts directly into zero.
+2. **Context hallucination** — manufactures the grounds for that caution.
+   Actionable as a prompt/formatting problem before it is a model problem.
+3. **Opt-out conflated with charging permission** — a domain misconception.
+4. **Premature stopping** — one case, ₹8,628.
+
+Demoted from the earlier ranking: policy interaction and overconfidence are real
+but cost almost nothing in revenue. Diagnosis quality is *not* a general
+weakness — on transient failures it is at parity, and on dead instruments the
+diagnosis is correct and only the action is wrong.
+
+## 10.5 Next experiments, re-ordered by this evidence
+
+- **002e (promoted to first)** — the two root causes are both plausibly prompt
+  failures. Test whether stating the category→remedy mapping and echoing the
+  observed facts back reduces escalation, before concluding anything about the
+  model.
+- **002b** — non-terminal escalation, to size the Level 2 boundary's own
+  contribution.
+- **002f (new)** — grounding check: require the agent to restate `opted_out`
+  and `prior_successful_payments` in its proposal, and measure the hallucination
+  rate directly rather than by regex over free text.
+- **002c** — hold the API constant across seeds.
+- **002d** — invalid-proposal termination.
+
+Still not proposed: memory, tools, MCP, higher autonomy. A memory layer built on
+a reasoner that misreads the context it is already given would be measuring the
+wrong thing.
