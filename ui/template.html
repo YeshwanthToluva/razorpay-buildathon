@@ -147,13 +147,14 @@ select{font-family:var(--mono);font-size:13px;padding:6px 10px;border:1px solid 
 .pitem .psc{color:var(--muted);font-size:11px;display:block;font-family:var(--mono)}
 .pitem .prv{font-family:var(--mono);font-size:12px}
 .pitem .prv.got{color:var(--good)} .pitem .prv.none{color:var(--muted)}
+.pitem .prv.lost{color:var(--warn)}
 .chain{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:18px}
-.obs{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;
+.obs{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;
   background:var(--line-soft);border:1px solid var(--line);border-radius:var(--radius);
   overflow:hidden;margin-bottom:20px}
 .obs div{background:var(--surface-2);padding:8px 11px}
 .obs .k{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.obs .v{font-family:var(--mono);font-size:14px;margin-top:2px}
+.obs .v{font-family:var(--mono);font-size:13.5px;margin-top:2px;overflow-wrap:anywhere;line-height:1.35}
 .step{border-left:2px solid var(--line);padding:0 0 16px 18px;position:relative}
 .step:last-child{padding-bottom:0}
 .step::before{content:"";position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;
@@ -212,6 +213,125 @@ select{font-family:var(--mono);font-size:13px;padding:6px 10px;border:1px solid 
 @media (max-width:720px){.tlrow .reslab{text-align:left}}
 .tlrow.concl{border-color:var(--accent);background:var(--accent-soft)}
 
+
+/* verdict + qualifier */
+.answer{font-size:17px;color:var(--ink);max-width:72ch;margin:14px 0 0;line-height:1.5}
+.answer b{font-family:var(--mono);font-weight:600}
+.answer .no{color:var(--warn);font-weight:600}
+.qualifier{font-size:13px;color:var(--muted);margin:6px 0 0;font-style:italic}
+
+/* recovery ladder */
+.ladder{margin-top:26px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface);padding:18px 20px}
+.ladder .cap{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);margin-bottom:14px}
+.lrow{display:grid;grid-template-columns:150px minmax(0,1fr) 132px;gap:14px;align-items:center;
+  padding:7px 0}
+@media (max-width:680px){.lrow{grid-template-columns:110px minmax(0,1fr) 96px;gap:10px}}
+.lrow .lab{font-family:var(--mono);font-size:12.5px}
+.lrow .lab small{display:block;color:var(--muted);font-size:10.5px}
+.ltrack{height:22px;background:var(--surface-2);border-radius:3px;position:relative;overflow:hidden}
+.ltrack i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.ltrack i.risk{background:var(--line)}
+.ltrack i.base{background:var(--accent)}
+.ltrack i.agent{background:var(--good)}
+.ltrack span{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  font-family:var(--mono);font-size:11px;color:var(--muted)}
+.lrow .val{font-family:var(--mono);font-size:14px;text-align:right;font-weight:600}
+.lgap{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);
+  display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px}
+.lgap .g{color:var(--warn);font-weight:600}
+
+/* experiment progression */
+.progression{margin-top:26px}
+.progtitle{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);margin-bottom:10px}
+.progrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;align-items:stretch}
+@media (max-width:820px){.progrow{grid-template-columns:1fr}}
+.pstep{background:var(--surface);border:1px solid var(--line);padding:13px 15px;position:relative}
+.pstep:not(:last-child){border-right:none}
+@media (max-width:820px){.pstep{border-right:1px solid var(--line)}
+  .pstep:not(:last-child){border-bottom:none}}
+.pstep:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+.pstep:last-child{border-radius:0 var(--radius) var(--radius) 0}
+@media (max-width:820px){.pstep:first-child{border-radius:var(--radius) var(--radius) 0 0}
+  .pstep:last-child{border-radius:0 0 var(--radius) var(--radius)}}
+.pstep.final{background:var(--accent-soft);border-color:var(--accent)}
+.pstep .pid{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.04em}
+.pstep .pt{font-size:13.5px;font-weight:600;margin-top:3px}
+.pstep .pm{margin-top:8px;display:grid;gap:3px}
+.pstep .pm span{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  display:flex;justify-content:space-between;gap:8px}
+.pstep .pm span b{font-weight:500;color:var(--ink-2)}
+.pstep .pm span.up b{color:var(--good)}
+.pstep .pm span.flat b{color:var(--warn)}
+.pstep .concl{font-size:12.5px;color:var(--ink-2);margin-top:6px;line-height:1.4}
+
+/* divergence summary */
+.divsummary{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+  padding:16px 18px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:26px;align-items:baseline}
+.divsummary .h{font-family:var(--mono);font-size:22px;font-weight:600}
+.divsummary .h small{font-size:12px;color:var(--muted);font-weight:400;display:block;
+  text-transform:uppercase;letter-spacing:.05em}
+.divsummary .gap{color:var(--warn)}
+.divsummary .explain{font-size:13.5px;color:var(--ink-2);max-width:46ch}
+.divsummary .explain b{font-family:var(--mono)}
+
+/* replay verdict */
+.pverdict{border-radius:var(--radius);padding:12px 15px;margin-bottom:16px;
+  display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;border:1px solid}
+.pverdict.win{background:var(--good-soft);border-color:var(--good)}
+.pverdict.loss{background:var(--warn-soft);border-color:var(--warn)}
+.pverdict.even{background:var(--surface-2);border-color:var(--line)}
+.pverdict .t{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;
+  font-weight:600}
+.pverdict.win .t{color:var(--good)} .pverdict.loss .t{color:var(--warn)}
+.pverdict.even .t{color:var(--muted)}
+.pverdict .d{font-family:var(--mono);font-size:19px;font-weight:600}
+.pverdict.win .d{color:var(--good)} .pverdict.loss .d{color:var(--warn)}
+.pverdict .cause{font-family:var(--mono);font-size:11.5px;color:var(--ink-2)}
+.pverdict .cause b{color:var(--muted);font-weight:500;display:block;font-size:10px;
+  text-transform:uppercase;letter-spacing:.05em}
+
+/* replay stages */
+.stagelab{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);margin:18px 0 7px}
+.cyclestrip{display:grid;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) 18px minmax(0,1fr);
+  gap:0;align-items:stretch;margin-bottom:10px}
+@media (max-width:760px){.cyclestrip{grid-template-columns:1fr;gap:6px}}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--line);font-size:15px}
+@media (max-width:760px){.arrow{transform:rotate(90deg);height:16px}}
+.stage{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);
+  padding:11px 13px;min-width:0}
+.stage .sl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted)}
+.stage .sv{font-family:var(--mono);font-size:13.5px;font-weight:600;margin-top:3px;
+  overflow-wrap:anywhere}
+.stage .sm{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+.stage p{margin:6px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.stage.proposed{border-left:2px solid var(--accent)}
+.stage.authorized{border-left:2px solid var(--warn)}
+.stage.executed{border-left:2px solid var(--good)}
+.stage.executed.fail{border-left-color:var(--muted)}
+.stage.blocked{border-left:2px solid var(--warn);opacity:.85}
+.stage.none{border-style:dashed;background:transparent}
+.cycletag{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.06em;margin:14px 0 5px}
+
+/* attack bar */
+.attackbar{margin-top:16px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface);padding:14px 16px}
+.attackbar .t{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);margin-bottom:10px}
+.abrow{display:grid;grid-template-columns:190px minmax(0,1fr) 60px;gap:12px;align-items:center;
+  padding:4px 0;font-family:var(--mono);font-size:12px}
+@media (max-width:620px){.abrow{grid-template-columns:130px minmax(0,1fr) 52px}}
+.abrow .n{color:var(--ink-2)}
+.abrow .track{height:8px;background:var(--surface-2);border-radius:2px;overflow:hidden}
+.abrow .track i{display:block;height:100%;background:var(--warn);border-radius:2px}
+.abrow .v{text-align:right;color:var(--warn)}
+
 footer{padding:34px 0 60px;color:var(--muted);font-size:12.5px}
 footer p{max-width:80ch;margin:0 0 8px}
 footer code{font-family:var(--mono)}
@@ -222,29 +342,35 @@ footer code{font-family:var(--mono)}
 <nav class="nav"><div class="wrap">
   <div class="brand">Revenue Recovery Lab <span>· agent evaluation</span></div>
   <div class="navlinks">
-    <a href="#runs">Runs</a><a href="#divergence">Divergence</a><a href="#replay">Replay</a>
-    <a href="#safety">Safety</a><a href="#timeline">Timeline</a>
+    <a href="#overview">Overview</a><a href="#experiments">Experiments</a>
+    <a href="#divergence">Divergence</a><a href="#replay">Replay</a><a href="#safety">Safety</a>
   </div>
 </div></nav>
 
-<header class="hero"><div class="wrap">
+<header class="hero" id="overview"><div class="wrap">
   <div class="eyebrow">Sprint 1 · autonomy level 2 · synthetic data only</div>
   <h1>Can an agent recover at-risk revenue better than a rule set?</h1>
-  <p class="sub">A frozen experimental record: six runs over the same 50 synthetic failed payments,
-  every decision passed through a deterministic policy engine and written to an append-only ledger.</p>
-  <div class="figures" id="figures"></div>
+  <p class="answer" id="verdict"></p>
+  <p class="qualifier">Exploratory. n&nbsp;=&nbsp;1 per agent arm; run-to-run variance not estimated.</p>
+
+  <div class="ladder" id="ladder"></div>
+
   <div class="limits">
     <b>Evidence and limits</b>
     <p>Every arm is <strong>n&nbsp;=&nbsp;1</strong> on one dataset, one seed, one model and one API path.
-    Run-to-run variance has not been estimated — observed spread across repeats of the same configuration is
-    several percentage points, which is larger than most differences shown here. The model budget for this
-    phase is closed, so the replication needed to resolve that was not run. Read the arms as observations,
-    not as a ranking.</p>
+    Observed spread across repeats of the same configuration is several percentage points — larger than
+    most differences shown here — and the model budget that would have resolved it is closed. Read the
+    arms as observations, not as a ranking.</p>
+  </div>
+
+  <div class="progression">
+    <div class="progtitle">What did we learn?</div>
+    <div class="progrow" id="progrow"></div>
   </div>
 </div></header>
 
-<section id="runs"><div class="wrap">
-  <div class="shead"><h2>Run comparison</h2><span class="tag">6 runs · all valid</span></div>
+<section id="experiments"><div class="wrap">
+  <div class="shead"><h2>Experiments</h2><span class="tag" id="expcount"></span></div>
   <p class="lede">All arms share the dataset <span class="mono">synthetic-v1</span>, seed
   <span class="mono">20260304</span> and policy <span class="mono">policy-v1&nbsp;ce95966c6cf1b196</span>.
   The baseline is deterministic and reproduced byte-identically across 8 separate runs.</p>
@@ -263,6 +389,7 @@ footer code{font-family:var(--mono)}
     <label class="ctl" for="divarm">Arm</label>
     <select id="divarm"></select>
   </div>
+  <div class="divsummary" id="divsummary"></div>
   <div class="divgrid" id="divgrid"></div>
 </div></section>
 
@@ -282,17 +409,26 @@ footer code{font-family:var(--mono)}
 </div></section>
 
 <section id="safety"><div class="wrap">
-  <div class="shead"><h2>Safety and authorization</h2><span class="tag">the invariant</span></div>
+  <div class="shead"><h2>Safety and authorization</h2><span class="tag" id="safetytag"></span></div>
   <p class="lede">The agent proposes; it never executes. An <span class="mono">AuthorizedAction</span> can
   only be minted inside the policy module, and the payment provider will not act without one — so a route
   from proposal to money that skips policy raises an exception rather than moving funds.</p>
   <div class="safety">
-    <div><div class="big" id="unsafeTotal">0</div><div class="biglabel">unsafe actions executed</div></div>
-    <p>Across all six runs in this console — and every run recorded in the project — no action reached the
-    payment provider without a policy <code>ALLOW</code>. Unsafe actions <em>proposed</em> are an
-    experimental observation and are counted separately; the deterministic boundary blocked
-    <span id="blockedTotal" class="mono"></span> of them here, and let none through.</p>
+    <div>
+      <div class="big" id="unsafeTotal">0</div>
+      <div class="biglabel">unsafe actions executed</div>
+    </div>
+    <div>
+      <p><strong id="attemptedTotal" class="mono"></strong> unsafe actions were <em>proposed</em> across
+      these runs and <strong id="blockedTotal" class="mono"></strong> were blocked — <strong>100% prevented
+      by deterministic authorization</strong>. The zero is not the agent declining to try; it is the
+      boundary holding while the agent tried.</p>
+      <p style="margin-top:10px">Reaching the provider requires an <code>AuthorizedAction</code>, which can
+      only be minted inside the policy module. A route from proposal to money that skips policy raises
+      <code>PolicyBypassError</code> rather than moving funds.</p>
+    </div>
   </div>
+  <div class="attackbar" id="attackbar"></div>
   <div class="hostile" id="hostile"></div>
 </div></section>
 
@@ -322,21 +458,66 @@ const base = D.arms.find(a => a.is_baseline);
 const agents = D.arms.filter(a => !a.is_baseline);
 const bestAgent = agents.reduce((a,b) => a.metrics.recovery_rate >= b.metrics.recovery_rate ? a : b);
 
-/* ---- headline figures ---- */
-const figs = [
-  ['Revenue at risk', rupee(base.metrics.revenue_at_risk_minor), '50 synthetic failed payments', ''],
-  ['Deterministic baseline', pct(base.metrics.recovery_rate), rupee(base.metrics.revenue_recovered_minor) + ' recovered', 'acc'],
-  ['Best observed agent', pct(bestAgent.metrics.recovery_rate), bestAgent.label + ' · ' + rupee(bestAgent.metrics.revenue_recovered_minor), ''],
-  ['Unsafe actions executed', '0', 'across all ' + D.arms.length + ' runs', 'pos'],
-];
-const figWrap = document.getElementById('figures');
-figs.forEach(([k,v,n,cls]) => {
-  const f = el('div','fig'+(cls?' '+cls:''));
-  f.append(el('div','k',k), el('div','v',v), el('div','n',n));
-  figWrap.append(f);
+/* ---- verdict, stated once, in plain words ---- */
+const rates = agents.map(a => a.metrics.recovery_rate);
+const refAgent = agents.reduce((a,b) => a.metrics.recovery_rate >= b.metrics.recovery_rate ? a : b);
+document.getElementById('verdict').innerHTML =
+  '<span class="no">Observed: no.</span> The deterministic baseline recovered <b>' +
+  rupee(base.metrics.revenue_recovered_minor) + ' (' + pct(base.metrics.recovery_rate) +
+  ')</b> against the agent\'s <b>' + rupee(refAgent.metrics.revenue_recovered_minor) + ' (' +
+  pct(refAgent.metrics.recovery_rate) + ')</b> on the same 50 payments.';
+
+/* ---- recovery ladder: at risk -> baseline -> agent ---- */
+const atRisk = base.metrics.revenue_at_risk_minor;
+const ladder = document.getElementById('ladder');
+ladder.innerHTML = '<div class="cap"><span>Recovery against the same 50 payments</span>' +
+  '<span>track = total at risk</span></div>';
+[['Total at risk','50 payments', atRisk, 'risk', null],
+ ['Baseline', base.note, base.metrics.revenue_recovered_minor, 'base', base.metrics.recovery_rate],
+ ['Agent', refAgent.label + ' · observed', refAgent.metrics.revenue_recovered_minor, 'agent', refAgent.metrics.recovery_rate]
+].forEach(([lab,sub,val,cls,rate]) => {
+  const row = el('div','lrow');
+  row.append(el('div','lab', lab + '<small>' + sub + '</small>'));
+  const track = el('div','ltrack');
+  const bar = el('i', cls); bar.style.width = (val/atRisk*100) + '%'; track.append(bar);
+  if(rate !== null) track.append(el('span','', pct(rate)));
+  row.append(track);
+  row.append(el('div','val', rupee(val)));
+  ladder.append(row);
 });
+const gapMinor = base.metrics.revenue_recovered_minor - refAgent.metrics.revenue_recovered_minor;
+ladder.append(el('div','lgap',
+  '<span>Gap to close</span><span class="g">' + rupee(gapMinor) + '</span>'));
+
+/* ---- experiment progression ---- */
+const PROG = [
+  ['002a','Divergence', [['recovery','24.4%','flat']],
+   'Escalation accounted for 94.6% of the gap.'],
+  ['002e','Context grounding', [['fidelity','81.4% → 95.5%','up'],['recovery','31.7% → 30.5%','flat']],
+   'Escalation eliminated. Revenue did not follow.'],
+  ['002g','Outcome feedback', [['failure awareness','47% → 87%','up'],['recovery','33.0% → 33.0%','flat']],
+   'Absorbed, and behaviour unchanged.'],
+];
+const progrow = document.getElementById('progrow');
+PROG.forEach(([id,title,metrics,concl]) => {
+  const st = el('div','pstep');
+  st.append(el('div','pid', id), el('div','pt', title));
+  const m = el('div','pm');
+  metrics.forEach(([k,v,cls]) => m.append(el('span', cls, k + ' <b>' + v + '</b>')));
+  st.append(m, el('div','concl', concl));
+  progrow.append(st);
+});
+const fin = el('div','pstep final');
+fin.append(el('div','pid','current reading'), el('div','pt','Not an information problem'),
+  el('div','concl','Two experiments improved what the agent knows. Neither moved the outcome. '
+    + 'What remains sits in stopping behaviour and action choice.'));
+progrow.append(fin);
 
 /* ---- run table ---- */
+document.getElementById('expcount').textContent =
+  D.arms.length + ' runs · all valid · agent range ' +
+  pct(Math.min(...rates)) + '–' + pct(Math.max(...rates));
+
 const tb = document.querySelector('#runtable tbody');
 D.arms.forEach(a => {
   const m = a.metrics, tr = el('tr', a.is_baseline ? 'base' : '');
@@ -363,8 +544,24 @@ const LABELS = {
   policy_blocked_correctly:'Policy blocked correctly', both_failed:'Both failed',
   agent_better:'Agent better than baseline', execution_failure:'Execution failure', other:'Other'
 };
+const LOSS_CLASSES = new Set(['excessive_escalation','premature_stopping',
+  'correct_diagnosis_suboptimal_action','other','execution_failure']);
+
 function renderDivergence(){
   const b = D.divergence[divArm.value] || {};
+  const arm = D.arms.find(a => a.run_id === divArm.value);
+  const net = Object.values(b).reduce((s,v) => s + v.delta, 0);
+  const losing = Object.entries(b).filter(([k]) => LOSS_CLASSES.has(k))
+                                  .reduce((s,[,v]) => s + v.n, 0);
+  const winning = (b.agent_better || {n:0}).n;
+  const sum = document.getElementById('divsummary');
+  sum.innerHTML =
+    '<div class="h">' + pct(arm.metrics.recovery_rate) + '<small>agent recovery</small></div>' +
+    '<div class="h gap">' + rupee(Math.abs(net)) + '<small>below baseline</small></div>' +
+    '<div class="explain"><b>' + losing + ' of 50 payments</b> account for the entire gap' +
+    (winning ? ', and <b>' + winning + '</b> went the other way — the agent beat the rule set there.'
+             : '. No payment went the other way in this run.') +
+    ' The remaining ' + (50 - losing - winning) + ' matched the baseline or were correctly blocked by policy.</div>';
   const rows = Object.entries(b).sort((x,y) => x[1].delta - y[1].delta);
   const max = Math.max(1, ...rows.map(r => Math.abs(r[1].delta)));
   const g = document.getElementById('divgrid'); g.innerHTML = '';
@@ -423,8 +620,15 @@ function renderList(){
     const item = el('div','pitem');
     item.setAttribute('role','option');
     item.setAttribute('tabindex','0');
+    const bp0 = (D.replay[base.run_id]||{})[pid];
+    let mark = p.revenue ? rupee(p.revenue) : '—', mcls = p.revenue ? 'got' : 'none';
+    if(bp0 && runId !== base.run_id){
+      const dl = p.revenue - bp0.revenue;
+      if(dl > 0){ mark = '+' + rupee(dl); mcls = 'got'; }
+      else if(dl < 0){ mark = '−' + rupee(Math.abs(dl)); mcls = 'lost'; }
+    }
     item.innerHTML = '<span><span class="pid">'+pid+'</span><span class="psc">'+p.scenario+'</span></span>' +
-      '<span class="prv '+(p.revenue?'got':'none')+'">'+(p.revenue?rupee(p.revenue):'—')+'</span>';
+      '<span class="prv '+mcls+'">'+mark+'</span>';
     const pick = () => { selected = pid; renderList(); renderChain(); };
     item.addEventListener('click', pick);
     item.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); }});
@@ -438,59 +642,105 @@ function renderChain(){
   const c = document.getElementById('chain'); c.innerHTML = '';
   if(!p) return;
   const cls = classOf(runId, selected);
+  const bp = (D.replay[base.run_id]||{})[selected];
+  const isBaselineArm = runId === base.run_id;
+
   c.append(el('div','', '<div class="eyebrow" style="margin-bottom:6px">'+selected+' · '+p.scenario+
-    ' · '+p.category+'</div><h3 style="font-size:17px">'+rupee(p.amount)+' at risk'+
-    (cls ? ' <span class="tag" style="font-weight:400">'+(LABELS[cls]||cls)+'</span>' : '')+'</h3>'));
+    ' · '+p.category+'</div><h3 style="font-size:17px">'+rupee(p.amount)+' at risk</h3>'));
+
+  /* verdict first: why is this case interesting? */
+  if(!isBaselineArm && bp){
+    const delta = p.revenue - bp.revenue;
+    const kind = delta > 0 ? 'win' : (delta < 0 ? 'loss' : 'even');
+    const title = delta > 0 ? 'Agent better than baseline'
+                : (delta < 0 ? 'Agent lost to baseline' : 'Same outcome as baseline');
+    const v = el('div','pverdict '+kind);
+    v.append(el('div','', '<div class="t">'+title+'</div>'));
+    if(delta !== 0) v.append(el('div','d', (delta>0?'+':'−') + rupee(Math.abs(delta))));
+    if(delta < 0 && cls && cls !== 'correct_diagnosis_correct_action')
+      v.append(el('div','cause','<b>cause</b>'+(LABELS[cls]||cls)));
+    v.append(el('div','cause','<b>agent</b>'+(p.revenue?rupee(p.revenue):'₹0')));
+    v.append(el('div','cause','<b>baseline</b>'+(bp.revenue?rupee(bp.revenue):'₹0')));
+    c.append(v);
+  }
+
+  /* stage 1: observed */
+  c.append(el('div','stagelab','1 · Observed — the state the agent was given'));
   const o = p.observed || {};
   const obs = el('div','obs');
-  [['retries used',o.retry_count],['contacts',o.contact_count],['disputed',o.is_disputed],
-   ['opted out',o.opted_out],['prior successes',o.prior_successful_payments],['risk flag',o.risk_flag]]
+  [['failure',p.category],['retries used',o.retry_count],['contacts',o.contact_count],
+   ['disputed',o.is_disputed],['opted out',o.opted_out],
+   ['prior successes',o.prior_successful_payments],['risk flag',o.risk_flag]]
    .forEach(([k,v]) => { const d=el('div'); d.append(el('div','k',k), el('div','v',String(v))); obs.append(d); });
-  c.append(el('div','',''), obs);
-  p.steps.forEach(s => {
-    if(s.k === 'proposal'){
-      const st = el('div','step proposal');
-      st.append(el('div','kind','cycle '+s.cycle+' · agent proposal'), el('div','act', s.action));
-      if(s.diagnosis) st.append(el('p','', s.diagnosis));
-      if(s.why) st.append(el('p','','<em>'+s.why+'</em>'));
-      st.append(el('div','meta','confidence ' + (s.confidence!=null?s.confidence.toFixed(2):'—')));
+  c.append(obs);
+
+  /* stages 2-4, grouped per decision cycle */
+  const cycles = [...new Set(p.steps.map(x => x.cycle))].sort((a,b) => a-b);
+  if(cycles.length) c.append(el('div','stagelab','2 · Proposed → 3 · Authorized → 4 · Executed'));
+  cycles.forEach(cy => {
+    const prop = p.steps.find(x => x.cycle===cy && x.k==='proposal');
+    const pol  = p.steps.find(x => x.cycle===cy && x.k==='policy');
+    const ex   = p.steps.find(x => x.cycle===cy && x.k==='exec');
+    const inv  = p.steps.find(x => x.cycle===cy && x.k==='invalid');
+    c.append(el('div','cycletag','cycle ' + cy));
+    const strip = el('div','cyclestrip');
+
+    /* proposed */
+    const sp = el('div','stage proposed');
+    sp.append(el('div','sl','agent proposed'));
+    if(inv && !prop){
+      sp.append(el('div','sv','—'), el('p','', inv.error || 'invalid proposal'));
+    } else if(prop){
+      sp.append(el('div','sv', prop.action));
+      sp.append(el('div','sm','confidence ' + (prop.confidence!=null?prop.confidence.toFixed(2):'—')));
+      if(prop.why) sp.append(el('p','', prop.why));
       const claims = el('div','claims');
-      if(s.claimed_opted_out !== null && s.claimed_opted_out !== undefined){
-        const ok = s.claimed_opted_out === o.opted_out;
-        claims.append(el('span','claim '+(ok?'ok':'bad'), 'claims opted_out='+s.claimed_opted_out+(ok?' ✓':' ✗ actual '+o.opted_out)));
+      if(prop.claimed_opted_out !== null && prop.claimed_opted_out !== undefined){
+        const ok = prop.claimed_opted_out === o.opted_out;
+        claims.append(el('span','claim '+(ok?'ok':'bad'),
+          'opted_out=' + prop.claimed_opted_out + (ok?' ✓':' ✗ actual ' + o.opted_out)));
       }
-      if(s.claimed_prior !== null && s.claimed_prior !== undefined){
-        const ok = s.claimed_prior === o.prior_successful_payments;
-        claims.append(el('span','claim '+(ok?'ok':'bad'), 'claims prior='+s.claimed_prior+(ok?' ✓':' ✗ actual '+o.prior_successful_payments)));
+      if(prop.claimed_prior !== null && prop.claimed_prior !== undefined){
+        const ok = prop.claimed_prior === o.prior_successful_payments;
+        claims.append(el('span','claim '+(ok?'ok':'bad'),
+          'prior=' + prop.claimed_prior + (ok?' ✓':' ✗ actual ' + o.prior_successful_payments)));
       }
-      if(s.claimed_last_outcome) claims.append(el('span','claim ok','last attempt: '+s.claimed_last_outcome));
-      if(claims.children.length) st.append(claims);
-      c.append(st);
-    } else if(s.k === 'policy'){
-      const st = el('div','step policy');
-      st.append(el('div','kind','policy engine'),
-        el('div','act','<span class="verdict '+s.decision+'">'+s.decision+'</span> <span style="font-weight:400;font-size:12.5px;color:var(--muted)">'+s.rule+'</span>'));
-      if(s.reason) st.append(el('p','', s.reason));
-      c.append(st);
-    } else if(s.k === 'exec'){
-      const fail = s.result !== 'SUCCESS' || !s.recovered;
-      const st = el('div','step exec'+(fail?' fail':''));
-      st.append(el('div','kind','executed via simulator'), el('div','act', s.action));
-      st.append(el('div','meta', s.result + (s.recovered ? ' · recovered ' + rupee(s.recovered) : ' · nothing recovered') + ' · → ' + s.state));
-      c.append(st);
-    } else if(s.k === 'invalid'){
-      const st = el('div','step invalid');
-      st.append(el('div','kind','invalid proposal'), el('div','act','—'));
-      st.append(el('p','', s.error || ''));
-      c.append(st);
+      if(prop.claimed_last_outcome)
+        claims.append(el('span','claim ok','last attempt ' + prop.claimed_last_outcome));
+      if(claims.children.length) sp.append(claims);
+    } else sp.append(el('div','sv','—'));
+    strip.append(sp, el('div','arrow','→'));
+
+    /* authorized */
+    const sa = el('div','stage ' + (pol && pol.decision==='ALLOW' ? 'authorized' : (pol?'blocked':'none')));
+    sa.append(el('div','sl','policy engine'));
+    if(pol){
+      sa.append(el('div','sv','<span class="verdict '+pol.decision+'">'+pol.decision+'</span>'));
+      sa.append(el('div','sm', pol.rule));
+      if(pol.reason) sa.append(el('p','', pol.reason));
+    } else sa.append(el('div','sv','—'));
+    strip.append(sa, el('div','arrow','→'));
+
+    /* executed */
+    const failed = ex && (ex.result !== 'SUCCESS' || !ex.recovered);
+    const se = el('div','stage ' + (ex ? ('executed' + (failed?' fail':'')) : 'none'));
+    se.append(el('div','sl','simulator'));
+    if(ex){
+      se.append(el('div','sv', ex.recovered ? 'RECOVERED' : ex.result));
+      se.append(el('div','sm', (ex.recovered ? rupee(ex.recovered) + ' · ' : 'nothing recovered · ') + ex.state));
+    } else {
+      se.append(el('div','sv','not executed'),
+        el('div','sm', pol ? 'no authority minted' : '—'));
     }
+    strip.append(se);
+    c.append(strip);
   });
-  const bp = (D.replay[base.run_id]||{})[selected];
+
   const out = el('div','outcome');
   out.innerHTML = '<div><b>Final state</b>'+(p.final||'—')+'</div>' +
     '<div><b>Agent recovered</b>'+(p.revenue?rupee(p.revenue):'₹0')+'</div>' +
-    (bp ? '<div><b>Baseline recovered</b>'+(bp.revenue?rupee(bp.revenue):'₹0')+'</div>' : '') +
-    (bp ? '<div><b>Baseline actions</b>'+(bp.steps.filter(x=>x.k==='proposal').map(x=>x.action).join(' → ')||'none')+'</div>' : '');
+    (bp && !isBaselineArm ? '<div><b>Baseline actions</b>'+
+      (bp.steps.filter(x=>x.k==='proposal').map(x=>x.action).join(' → ')||'none')+'</div>' : '');
   c.append(out);
 }
 rpArm.addEventListener('change', () => { buildFilter(); renderList(); renderChain(); });
@@ -498,10 +748,27 @@ rpFilter.addEventListener('change', () => { renderList(); renderChain(); });
 buildFilter(); selected = 'pay_0033'; renderList(); renderChain();
 
 /* ---- safety ---- */
+const attempted = D.arms.reduce((s,a) => s + (a.metrics.policy_violations_attempted||0), 0);
+const prevented = D.arms.reduce((s,a) => s + (a.metrics.policy_violations_prevented||0), 0);
 document.getElementById('unsafeTotal').textContent =
   D.arms.reduce((s,a) => s + (a.metrics.unsafe_actions_executed||0), 0);
-document.getElementById('blockedTotal').textContent =
-  D.arms.reduce((s,a) => s + (a.metrics.policy_violations_prevented||0), 0);
+document.getElementById('attemptedTotal').textContent = attempted;
+document.getElementById('blockedTotal').textContent = prevented;
+document.getElementById('safetytag').textContent =
+  attempted + ' proposed · ' + prevented + ' blocked · 0 executed';
+
+/* per-arm attack bar: dangerous proposals rise with autonomy, none get through */
+const ab = document.getElementById('attackbar');
+ab.innerHTML = '<div class="t">Unsafe actions proposed per run — all blocked</div>';
+const maxAtt = Math.max(1, ...D.arms.map(a => a.metrics.policy_violations_attempted||0));
+D.arms.forEach(a => {
+  const n = a.metrics.policy_violations_attempted||0;
+  const row = el('div','abrow');
+  row.append(el('div','n', a.label));
+  const tr = el('div','track'); const i = el('i'); i.style.width = (n/maxAtt*100)+'%'; tr.append(i);
+  row.append(tr, el('div','v', String(n)));
+  ab.append(row);
+});
 const hostile = [
   ['REFUND_PAYMENT','Invented financial operation'],
   ['WIRE_FUNDS','Invented financial operation'],
