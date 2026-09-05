@@ -74,6 +74,14 @@ section{padding:40px 0;border-bottom:1px solid var(--line-soft)}
   color:var(--surface);cursor:pointer}
 .tryform button:hover{filter:brightness(1.08)}
 .hint{font-size:11.5px;color:var(--muted);line-height:1.45}
+.egs{display:grid;gap:5px}
+.egs button{font-family:var(--mono);font-size:11px;text-align:left;padding:6px 9px;
+  border-radius:var(--radius);border:1px solid var(--line);background:var(--bg);
+  color:var(--ink-2);cursor:pointer;font-weight:400}
+.egs button:hover{border-color:var(--accent);color:var(--accent-ink)}
+.egs button b{font-weight:600}
+.egs button .tagx{float:right;font-size:9.5px;letter-spacing:.04em}
+.egs button .tagx.no{color:var(--warn)} .egs button .tagx.yes{color:var(--good)}
 .verdictbox{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
   padding:18px;min-height:210px}
 .vhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
@@ -116,7 +124,9 @@ footer code{font-family:var(--mono)}
 
 <section id="rules"><div class="wrap">
   <div class="shead"><h2>The rules, in evaluation order</h2><span class="tag" id="rulecount"></span></div>
-  <p class="lede">They run top to bottom and <strong>the first refusal wins</strong>, so a payment that
+  <p class="lede"><strong>These are rules, not actions.</strong> A rule is a check the engine runs;
+  an action is what the agent asks to do. The six actions live further down. They run top to bottom and
+  <strong>the first refusal wins</strong>, so a payment that
   is both disputed and past its recovery window reports the dispute — the more serious cause is the one
   written to the ledger. The table ends in a default denial: anything not explicitly permitted is
   refused, so adding an action without deciding its policy makes it unusable rather than allowed.</p>
@@ -144,16 +154,26 @@ footer code{font-family:var(--mono)}
   <div class="try">
     <form class="tryform" id="tryform">
       <div>
-        <label for="taction">Action</label>
-        <input id="taction" value="WIRE_FUNDS" list="known" autocomplete="off">
-        <datalist id="known"></datalist>
-        <div class="hint">Type anything — a real action, or one that does not exist.</div>
+        <label for="tpick">Action the agent asks to take</label>
+        <select id="tpick"></select>
+        <div class="hint">The six real actions. Rules such as <code
+        class="mono">SAFETY_VALVE</code> are not actions — they are checks the engine
+        runs, so submitting one is refused as unsupported.</div>
+      </div>
+      <div>
+        <label for="taction">…or type anything, to attack it</label>
+        <input id="taction" value="" placeholder="WIRE_FUNDS" autocomplete="off">
+        <div class="hint">Anything typed here overrides the choice above.</div>
       </div>
       <div>
         <label for="tscenario">Against this case</label>
         <select id="tscenario"></select>
       </div>
       <button type="submit">Submit to the policy engine</button>
+      <div>
+        <label>One-click examples</label>
+        <div class="egs" id="egs"></div>
+      </div>
     </form>
     <div class="verdictbox" id="verdict">
       <div class="hint">Submit an action to see the verdict, the rule that decided it, and every rule
@@ -205,8 +225,32 @@ RB.action_space.forEach(a => {
   const always = RB.always_available.includes(a);
   actsBox.append(el('span','act' + (always ? ' always' : ''), a + (always ? ' · always available' : '')));
 });
-document.getElementById('known').innerHTML =
-  RB.action_space.map(a => '<option value="'+a+'">').join('');
+const pick = document.getElementById('tpick');
+RB.action_space.forEach(a => pick.append(new Option(
+  a + (RB.always_available.includes(a) ? '  (always available)' : ''), a)));
+pick.value = 'GENERATE_PAYMENT_LINK';
+
+const EXAMPLES = [
+  ['GENERATE_PAYMENT_LINK', 'checkout_card_declined', 'allowed', 'yes'],
+  ['RETRY_PAYMENT', 'checkout_card_declined', 'refused · nothing to charge', 'no'],
+  ['RETRY_PAYMENT', 'customer_dispute', 'refused · disputed', 'no'],
+  ['SEND_PAYMENT_REMINDER', 'customer_opt_out', 'refused · opted out', 'no'],
+  ['RETRY_PAYMENT', 'receivable_high_value', 'needs a human', 'no'],
+  ['WIRE_FUNDS', 'transient_bank_failure', 'refused · invented', 'no'],
+];
+const egs = document.getElementById('egs');
+EXAMPLES.forEach(([a, sc, label, kind]) => {
+  const b = el('button','', '<b>' + a + '</b> on ' + sc.replace(/_/g,' ') +
+    '<span class="tagx ' + kind + '">' + label + '</span>');
+  b.type = 'button';
+  b.addEventListener('click', () => {
+    document.getElementById('taction').value = RB.action_space.includes(a) ? '' : a;
+    if(RB.action_space.includes(a)) pick.value = a;
+    if([...scen.options].some(o => o.value === sc)) scen.value = sc;
+    document.getElementById('tryform').requestSubmit();
+  });
+  egs.append(b);
+});
 
 /* try it */
 const scen = document.getElementById('tscenario');
@@ -233,8 +277,9 @@ document.getElementById('tryform').addEventListener('submit', async ev => {
   try{
     const r = await fetch(API + '/api/policy/evaluate', {
       method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify({action: document.getElementById('taction').value,
-                            scenario: scen.value, scheduled_delay_hours: 24}),
+      body: JSON.stringify({
+        action: (document.getElementById('taction').value.trim() || pick.value),
+        scenario: scen.value, scheduled_delay_hours: 24}),
     });
     const d = await r.json();
     const yes = d.authority_minted;
@@ -246,7 +291,9 @@ document.getElementById('tryform').addEventListener('submit', async ev => {
       '<div class="vreason" style="color:var(--muted)">' +
         (yes ? 'An AuthorizedAction was minted, so this could reach the provider.'
              : 'No AuthorizedAction was minted, so nothing can reach the provider.') +
-        (d.in_action_space ? '' : ' The action you submitted is not in the action space at all.') +
+        (d.in_action_space ? '' :
+          ' <strong>\u201c' + d.submitted_action + '\u201d is not an action at all.</strong> ' +
+          'The six the agent may ask for are: ' + d.known_actions.join(', ') + '.') +
       '</div>' +
       '<div class="vtrace"><div class="t">rules consulted, in order</div><div class="chips">' +
         d.rules_evaluated.map(x =>
