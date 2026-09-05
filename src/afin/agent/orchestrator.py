@@ -16,6 +16,7 @@ loop until the cap on every blocked payment.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Callable
 from datetime import datetime
 
 from sqlalchemy import Engine
@@ -61,13 +62,27 @@ class Orchestrator:
     now: datetime
     dataset_version: str
     max_cycles: int = MAX_CYCLES
+    #: Optional live observer. Receives a copy of every audit payload as it is
+    #: written. Purely additive: it cannot alter a decision, and with the default
+    #: of None the loop behaves exactly as it did before.
+    observer: Callable[[dict], None] | None = None
+
+    def _emit(self, **payload) -> None:
+        """Write an audit event and, if watched, hand a copy to the observer."""
+        self.ledger.record(**payload)
+        if self.observer is not None:
+            try:
+                self.observer(dict(payload))
+            except Exception:
+                # A watcher must never be able to break a recovery run.
+                pass
 
     async def run_case(
         self, payment: PaymentSnapshot, customer: CustomerSnapshot
     ) -> CaseResult:
         result = CaseResult(payment=payment, cycles=0)
         state = observed_state(payment, customer)
-        self.ledger.record(
+        self._emit(
             payment_id=payment.id,
             cycle=0,
             event_type=EventType.CASE_OPENED,
@@ -100,7 +115,7 @@ class Orchestrator:
             if proposal.action_type is None:
                 result.unsafe_proposed += 1
 
-            self.ledger.record(
+            self._emit(
                 payment_id=payment.id,
                 cycle=cycle,
                 event_type=EventType.PROPOSAL_MADE,
@@ -130,7 +145,7 @@ class Orchestrator:
             else:
                 result.approved += 1
 
-            self.ledger.record(
+            self._emit(
                 payment_id=payment.id,
                 cycle=cycle,
                 event_type=EventType.POLICY_EVALUATED,
@@ -157,7 +172,7 @@ class Orchestrator:
 
             self._execute(result, customer, cycle, state, proposal, gw, attempts=attempts)
 
-        self.ledger.record(
+        self._emit(
             payment_id=result.payment.id,
             cycle=result.cycles,
             event_type=EventType.CASE_CLOSED,
@@ -188,7 +203,7 @@ class Orchestrator:
         except InvalidProposal as exc:
             result.invalid_proposals += 1
             result.errors.append(f"invalid proposal: {exc.detail}")
-            self.ledger.record(
+            self._emit(
                 payment_id=payment.id,
                 cycle=cycle,
                 event_type=EventType.PROPOSAL_INVALID,
@@ -199,7 +214,7 @@ class Orchestrator:
             return None
         except Exception as exc:  # a provider outage must not corrupt the run
             result.errors.append(f"{type(exc).__name__}: {exc}")
-            self.ledger.record(
+            self._emit(
                 payment_id=payment.id,
                 cycle=cycle,
                 event_type=EventType.AGENT_ERROR,
@@ -285,7 +300,7 @@ class Orchestrator:
             amount_minor=outcome.amount_recovered_minor,
             occurred_at=self.now,
         )
-        self.ledger.record(
+        self._emit(
             payment_id=before.id,
             cycle=cycle,
             event_type=EventType.ACTION_EXECUTED,
