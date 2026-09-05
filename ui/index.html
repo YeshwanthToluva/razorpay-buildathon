@@ -697,6 +697,10 @@ body::before{
 .lvinv{display:flex;align-items:center;gap:12px;border-color:var(--good);background:var(--good-soft)}
 .lvinv .z{font-family:var(--mono);font-size:30px;font-weight:600;color:var(--good);line-height:1}
 .lvinv .l{font-size:11px;color:var(--ink-2);line-height:1.4}
+.paybtn{display:inline-block;margin-top:10px;font-family:var(--mono);font-size:12px;
+  font-weight:600;padding:8px 15px;border-radius:var(--radius);text-decoration:none;
+  border:1px solid var(--good);background:var(--good);color:var(--surface)}
+.paybtn:hover{filter:brightness(1.08)}
 
 footer{padding:34px 0 60px;color:var(--muted);font-size:12.5px}
 footer p{max-width:80ch;margin:0 0 8px}
@@ -775,6 +779,11 @@ footer code{font-family:var(--mono)}
   <div class="livebar">
     <label class="ctl" for="lvscenario">Risk</label>
     <select id="lvscenario"></select>
+    <label class="ctl" for="lvchannel">Channel</label>
+    <select id="lvchannel">
+      <option value="simulated">Simulated customer</option>
+      <option value="email">Real email → you</option>
+    </select>
     <label class="ctl" for="lvreasoner">Agent</label>
     <select id="lvreasoner">
       <option value="rules">Deterministic rules (no model)</option>
@@ -1668,7 +1677,9 @@ async function runLive(){
       'PYTHONPATH=src:. python -m uvicorn apps.api.main:app --port 8000');
     return;
   }
-  lvBusy = true; lvRunBtn.disabled = true; lvRunBtn.textContent = 'Running…';
+  const liveMail = document.getElementById('lvchannel').value === 'email';
+  lvBusy = true; lvRunBtn.disabled = true;
+  lvRunBtn.textContent = liveMail ? 'Sending…' : 'Running…';
   lvStream.innerHTML = '';
   document.getElementById('lvrisk').textContent = '—';
   document.getElementById('lvrec').textContent = '—';
@@ -1684,6 +1695,7 @@ async function runLive(){
       body: JSON.stringify({
         scenario: lvScen.value,
         reasoner: document.getElementById('lvreasoner').value,
+        channel: document.getElementById('lvchannel').value,
         profile: 'gpt',
       }),
     });
@@ -1770,6 +1782,38 @@ async function runLive(){
             document.getElementById('lvbar').style.width =
               Math.min(100, got / atRisk * 100) + '%';
           }
+        } else if(t === 'DEMO_REDIRECT'){
+          lvAdd('detect','demo redirect',
+            e.to,
+            'This synthetic customer\'s address (' + e.from + ') is not a real inbox, so the ' +
+            'message is delivered to the demo address instead. The policy engine checks the ' +
+            'address that actually receives it, not the one being replaced.');
+        } else if(t === 'LINK_SENT'){
+          const box = lvAdd('exec win','5 · a real email left the building',
+            'Sent to ' + e.recipient,
+            'It carries a working payment link for ' + rupee(e.amount_minor) + '.');
+          const a = document.createElement('a');
+          a.href = e.url; a.target = '_blank'; a.className = 'paybtn';
+          a.textContent = 'Open the payment page →';
+          box.append(a);
+        } else if(t === 'AWAITING_CUSTOMER'){
+          const box = lvAdd('policy','6 · waiting on the customer',
+            'Nothing more the agent can do',
+            'The case is parked. It is not retrying, not messaging again, and not ' +
+            'guessing whether you paid — it waits until the money actually arrives.');
+          const a = document.createElement('a');
+          a.href = e.url; a.target = '_blank'; a.className = 'paybtn';
+          a.textContent = 'Pay now →';
+          box.append(a);
+        } else if(t === 'PAYMENT_RECEIVED'){
+          const got = e.revenue_recovered_minor || 0;
+          lvAdd('exec win','7 · payment received',
+            'Collected ' + rupee(got),
+            'You paid the link. The agent observed it, closed the case, and a receipt ' +
+            'is on its way from the same agent.');
+          document.getElementById('lvrec').textContent = rupee(got);
+          document.getElementById('lvbar').style.width =
+            Math.min(100, got / atRisk * 100) + '%';
         } else if(t === 'PROPOSAL_INVALID'){
           lvAdd('err','proposal rejected','malformed proposal', e.error || '');
         } else if(t === 'RUN_COMPLETE'){
