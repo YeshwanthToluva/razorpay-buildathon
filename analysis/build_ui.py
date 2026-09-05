@@ -15,13 +15,22 @@ DATA = ROOT / "analysis" / "console_data.json"
 TEMPLATE = ROOT / "ui" / "template.html"
 OUT = ROOT / "ui" / "index.html"
 
+PAGES = [
+    (ROOT / "ui" / "template.html", ROOT / "ui" / "index.html"),
+    (ROOT / "ui" / "rulebook_template.html", ROOT / "ui" / "rulebook.html"),
+]
+
+
 def main() -> None:
-    data = DATA.read_text()
-    # The payload sits in a JSON script block; only "</script>" could break out.
-    html = TEMPLATE.read_text().replace("__CONSOLE_DATA__", data.replace("</", "<\\/"))
-    OUT.write_text(html)
-    print(f"wrote {OUT.relative_to(ROOT)} ({OUT.stat().st_size/1024:,.0f} KB)")
-    print(f"open: file://{OUT}")
+    data = DATA.read_text().replace("</", "<\\/")
+    shared = (ROOT / "ui" / "_shared.css").read_text()
+    for template, out in PAGES:
+        if not template.exists():
+            continue
+        html = template.read_text()
+        html = html.replace("__SHARED_CSS__", shared).replace("__CONSOLE_DATA__", data)
+        out.write_text(html)
+        print(f"wrote {out.relative_to(ROOT)} ({out.stat().st_size/1024:,.0f} KB)")
 
 if __name__ == "__main__":
     main()

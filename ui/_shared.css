@@ -1,0 +1,56 @@
+/* generated from ui/template.html -- do not edit */
+
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --surface-2:#eceeed; --line:#d5dbd9; --line-soft:#e4e9e7;
+  --ink:#14201e; --ink-2:#3d4c49; --muted:#65756f;
+  --accent:#0d7d78; --accent-soft:#d7ebe9; --accent-ink:#075450;
+  --good:#2f7a4f; --good-soft:#dcefe2;
+  --warn:#b4690e; --warn-soft:#f6e8d3;
+  --crit:#b3261e; --crit-soft:#f7dedc;
+  --grid:#e8ecea;
+  --radius:6px;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1211; --surface:#131b19; --surface-2:#1a2422; --line:#2a3634; --line-soft:#212c2a;
+    --ink:#e7edea; --ink-2:#c0ccc8; --muted:#8fa09b;
+    --accent:#3fb3ab; --accent-soft:#13312f; --accent-ink:#7fd3cc;
+    --good:#5fc088; --good-soft:#152a1f;
+    --warn:#dc9a45; --warn-soft:#2e2415;
+    --crit:#e0685f; --crit-soft:#301a19;
+    --grid:#1e2a28;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1211; --surface:#131b19; --surface-2:#1a2422; --line:#2a3634; --line-soft:#212c2a;
+  --ink:#e7edea; --ink-2:#c0ccc8; --muted:#8fa09b;
+  --accent:#3fb3ab; --accent-soft:#13312f; --accent-ink:#7fd3cc;
+  --good:#5fc088; --good-soft:#152a1f;
+  --warn:#dc9a45; --warn-soft:#2e2415;
+  --crit:#e0685f; --crit-soft:#301a19;
+  --grid:#1e2a28;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{text-wrap:balance;margin:0;font-weight:600;letter-spacing:-0.01em}
+a{color:var(--accent-ink)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:56px}
+.brand{font-weight:600;font-size:14px;letter-spacing:-0.01em;white-space:nowrap}
+.brand span{color:var(--accent);font-family:var(--mono)}
+.navlinks{display:flex;gap:2px;overflow-x:auto;margin-left:auto}
+.navlinks a{font-size:12.5px;color:var(--muted);text-decoration:none;padding:6px 10px;
+  border-radius:var(--radius);white-space:nowrap}
+.navlinks a:hover{color:var(--ink);background:var(--surface-2)}
+.navlinks a:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+

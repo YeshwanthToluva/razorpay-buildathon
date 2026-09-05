@@ -104,8 +104,51 @@ def replay(ledger: dict) -> dict:
     return out
 
 
+def rulebook() -> dict:
+    """The rulebook, read from the engine so it cannot drift from what runs."""
+    from afin.policy.config import DEFAULT_POLICY_CONFIG as cfg
+    from afin.policy.decisions import PolicyRule
+    from afin.policy.engine import RULES, _EXPLICITLY_PERMITTED
+    from afin.domain.enums import ActionType
+
+    sys.path.insert(0, "apps")
+    from apps.api.main import RULE_INTENT  # the plain-language descriptions
+
+    rows = [
+        {
+            "order": i,
+            "rule": rid.value,
+            "intent": RULE_INTENT.get(rid.value, ""),
+            "outcome": "ALLOW" if rid is PolicyRule.SAFETY_VALVE
+            else ("REQUIRE_APPROVAL" if rid is PolicyRule.HIGH_VALUE_APPROVAL else "DENY"),
+        }
+        for i, (rid, _) in enumerate(RULES, start=1)
+    ]
+    rows += [
+        {"order": len(RULES) + 1, "rule": "PERMITTED",
+         "intent": RULE_INTENT["PERMITTED"], "outcome": "ALLOW"},
+        {"order": len(RULES) + 2, "rule": "DEFAULT_DENY",
+         "intent": RULE_INTENT["DEFAULT_DENY"], "outcome": "DENY"},
+    ]
+    return {
+        "policy_version": cfg.version,
+        "fingerprint": cfg.fingerprint(),
+        "rules": rows,
+        "action_space": [a.value for a in ActionType],
+        "always_available": ["REQUEST_HUMAN_REVIEW", "STOP_RECOVERY"],
+        "thresholds": {
+            "retries allowed": cfg.max_retries,
+            "unattended ceiling": f"\u20b9{cfg.high_value_threshold_minor / 100:,.0f}",
+            "wait between retries": f"{cfg.retry_cooldown_hours}h",
+            "contacts allowed": cfg.max_contacts,
+            "furthest a retry may be scheduled": f"{cfg.max_schedule_delay_hours}h",
+        },
+    }
+
+
 def main() -> None:
-    console: dict = {"arms": [], "replay": {}, "divergence": {}, "transitions": {}}
+    console: dict = {"arms": [], "replay": {}, "divergence": {}, "transitions": {},
+                     "rulebook": rulebook()}
 
     for run_id, label, note, experiment in ARMS:
         led_path = LEDGER / f"{run_id}.json"

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Rulebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+__SHARED_CSS__
+
+/* page */
+header.rb{padding:44px 0 30px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.12;max-width:20ch}
+.sub{color:var(--ink-2);max-width:70ch;margin-top:14px;font-size:15.5px}
+.stamp{display:flex;flex-wrap:wrap;gap:0;margin-top:22px;border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.stamp div{padding:10px 15px;border-right:1px solid var(--line-soft);min-width:120px}
+.stamp div:last-child{border-right:none}
+.stamp .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted)}
+.stamp .v{font-family:var(--mono);font-size:13px;margin-top:2px}
+section{padding:40px 0;border-bottom:1px solid var(--line-soft)}
+.shead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.shead h2{font-size:20px;margin:0}
+.shead .tag{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);
+  border-radius:3px;padding:2px 7px}
+.lede{color:var(--ink-2);max-width:76ch;margin:0 0 20px;font-size:14.5px}
+
+/* the rules */
+.rules{display:grid;gap:2px}
+.rule{display:grid;grid-template-columns:34px 232px 132px minmax(0,1fr);gap:16px;align-items:baseline;
+  padding:12px 15px;background:var(--surface);border:1px solid var(--line-soft);
+  border-radius:var(--radius)}
+@media (max-width:820px){.rule{grid-template-columns:30px 1fr;gap:8px}
+  .rule .out{grid-column:2} .rule .why{grid-column:2}}
+.rule:hover{background:var(--surface-2)}
+.rule .n{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+.rule .id{font-family:var(--mono);font-size:12.5px;font-weight:600;overflow-wrap:anywhere}
+.rule .why{font-size:13px;color:var(--ink-2);line-height:1.5}
+.out{font-family:var(--mono);font-size:10px;letter-spacing:.05em;padding:2px 8px;border-radius:3px;
+  border:1px solid;justify-self:start;white-space:nowrap}
+.out.DENY{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.out.ALLOW{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.out.REQUIRE_APPROVAL{color:var(--accent-ink);border-color:var(--accent);background:var(--accent-soft)}
+.rule.terminal{border-color:var(--line);background:var(--surface-2)}
+
+/* thresholds + actions */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;
+  background:var(--line-soft);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.cell{background:var(--surface);padding:13px 16px}
+.cell .k{font-size:12.5px;color:var(--muted)}
+.cell .v{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:3px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.act{font-family:var(--mono);font-size:12px;padding:5px 11px;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--surface)}
+.act.always{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+/* try it */
+.try{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:800px){.try{grid-template-columns:1fr}}
+.tryform{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+  padding:16px;display:grid;gap:10px}
+.tryform label{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted)}
+.tryform input,.tryform select{font-family:var(--mono);font-size:13px;padding:7px 10px;
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);color:var(--ink);
+  width:100%}
+.tryform button{font-family:var(--mono);font-size:12.5px;font-weight:600;padding:9px 16px;
+  border-radius:var(--radius);border:1px solid var(--accent);background:var(--accent);
+  color:var(--surface);cursor:pointer}
+.tryform button:hover{filter:brightness(1.08)}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.45}
+.verdictbox{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+  padding:18px;min-height:210px}
+.vhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.vbig{font-family:var(--mono);font-size:21px;font-weight:600}
+.vbig.no{color:var(--warn)} .vbig.yes{color:var(--good)}
+.vrule{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.vreason{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.55;max-width:70ch}
+.vtrace{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.vtrace .t{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:7px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:3px;
+  border:1px solid var(--line-soft);color:var(--muted)}
+.chip.hit{border-color:var(--warn);color:var(--warn);background:var(--warn-soft);font-weight:600}
+.chip.pass{opacity:.55}
+.apistate{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.apistate.up{color:var(--good)} .apistate.down{color:var(--warn)}
+footer{padding:32px 0 60px;color:var(--muted);font-size:12.5px}
+footer code{font-family:var(--mono)}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="wrap">
+  <div class="brand">Revenue Recovery Lab <span>· the rulebook</span></div>
+  <div class="navlinks">
+    <a href="index.html">← Study</a><a href="index.html#live">Live</a>
+    <a href="#rules">Rules</a><a href="#limits">Limits</a><a href="#try">Try it</a>
+  </div>
+</div></nav>
+
+<header class="rb"><div class="wrap">
+  <div class="eyebrow">The deterministic boundary</div>
+  <h1>Every rule the agent has to get past.</h1>
+  <p class="sub">The agent may propose anything at all. This is the code that decides whether it
+  happens. It is pure and deterministic — no model, no network, no database — and it is the only place
+  an <code class="mono">AuthorizedAction</code> can be created, which is the object a payment provider
+  refuses to act without.</p>
+  <div class="stamp" id="stamp"></div>
+</div></header>
+
+<section id="rules"><div class="wrap">
+  <div class="shead"><h2>The rules, in evaluation order</h2><span class="tag" id="rulecount"></span></div>
+  <p class="lede">They run top to bottom and <strong>the first refusal wins</strong>, so a payment that
+  is both disputed and past its recovery window reports the dispute — the more serious cause is the one
+  written to the ledger. The table ends in a default denial: anything not explicitly permitted is
+  refused, so adding an action without deciding its policy makes it unusable rather than allowed.</p>
+  <div class="rules" id="rules"></div>
+</div></section>
+
+<section id="limits"><div class="wrap">
+  <div class="shead"><h2>The limits it enforces</h2><span class="tag" id="fp"></span></div>
+  <p class="lede">Thresholds are configuration, not law. Changing one changes the policy fingerprint,
+  which is recorded on every run — so two experiments run under different limits can never be silently
+  compared.</p>
+  <div class="grid2" id="thresholds"></div>
+
+  <div class="shead" style="margin-top:30px"><h2>The actions it will consider</h2></div>
+  <p class="lede">A closed set. Anything outside it is refused as an unsupported action, which is how an
+  agent is prevented from inventing financial operations.</p>
+  <div class="acts" id="actions"></div>
+</div></section>
+
+<section id="try"><div class="wrap">
+  <div class="shead"><h2>Try to get something past it</h2><span class="apistate" id="apistate">checking API…</span></div>
+  <p class="lede">This calls the same <code class="mono">authorize()</code> the orchestrator calls.
+  Nothing is simulated for the demo: if it says no authority was minted, there is no object with which
+  a provider could be reached.</p>
+  <div class="try">
+    <form class="tryform" id="tryform">
+      <div>
+        <label for="taction">Action</label>
+        <input id="taction" value="WIRE_FUNDS" list="known" autocomplete="off">
+        <datalist id="known"></datalist>
+        <div class="hint">Type anything — a real action, or one that does not exist.</div>
+      </div>
+      <div>
+        <label for="tscenario">Against this case</label>
+        <select id="tscenario"></select>
+      </div>
+      <button type="submit">Submit to the policy engine</button>
+    </form>
+    <div class="verdictbox" id="verdict">
+      <div class="hint">Submit an action to see the verdict, the rule that decided it, and every rule
+      consulted on the way.</div>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <p>Rules read from <code>src/afin/policy/engine.py</code>; thresholds from
+  <code>src/afin/policy/config.py</code>; authority minting in
+  <code>src/afin/policy/authorization.py</code>. Covered by 147 tests in <code>tests/policy/</code> and
+  19 adversarial tests in <code>tests/adversarial/</code>.</p>
+  <p>This page is generated from the engine itself, so it cannot drift from the rules that actually run.</p>
+</div></footer>
+
+<script id="console-data" type="application/json">__CONSOLE_DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('console-data').textContent);
+const RB = D.rulebook;
+const API = (localStorage.getItem('afin_api') || 'http://localhost:8000').replace(/\/$/, '');
+const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
+
+/* stamp */
+document.getElementById('stamp').innerHTML =
+  [['policy', RB.policy_version], ['fingerprint', RB.fingerprint],
+   ['rules', RB.rules.length], ['pure', 'no I/O, no model'],
+   ['tests', '147']]
+  .map(([k,v]) => '<div><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
+document.getElementById('rulecount').textContent = RB.rules.length + ' rules';
+document.getElementById('fp').textContent = RB.policy_version + ' · ' + RB.fingerprint;
+
+/* rules */
+const rulesBox = document.getElementById('rules');
+RB.rules.forEach(r => {
+  const row = el('div','rule' + (r.rule === 'PERMITTED' || r.rule === 'DEFAULT_DENY' ? ' terminal' : ''));
+  row.append(el('div','n', String(r.order)));
+  row.append(el('div','id', r.rule));
+  row.append(el('div','out ' + r.outcome, r.outcome === 'REQUIRE_APPROVAL' ? 'NEEDS A HUMAN' : r.outcome));
+  row.append(el('div','why', r.intent));
+  rulesBox.append(row);
+});
+
+/* thresholds + actions */
+document.getElementById('thresholds').innerHTML = Object.entries(RB.thresholds)
+  .map(([k,v]) => '<div class="cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
+const actsBox = document.getElementById('actions');
+RB.action_space.forEach(a => {
+  const always = RB.always_available.includes(a);
+  actsBox.append(el('span','act' + (always ? ' always' : ''), a + (always ? ' · always available' : '')));
+});
+document.getElementById('known').innerHTML =
+  RB.action_space.map(a => '<option value="'+a+'">').join('');
+
+/* try it */
+const scen = document.getElementById('tscenario');
+const state = document.getElementById('apistate');
+async function boot(){
+  try{
+    const h = await (await fetch(API + '/api/health', {cache:'no-store'})).json();
+    state.textContent = 'API up · ' + h.policy + ' ' + h.fingerprint;
+    state.className = 'apistate up';
+    const list = await (await fetch(API + '/api/scenarios', {cache:'no-store'})).json();
+    scen.innerHTML = '';
+    list.forEach(s => scen.append(new Option(
+      s.tag.replace(/_/g,' ') + '  ·  ' + s.failure_category, s.tag)));
+    scen.value = 'customer_dispute';
+  }catch(e){
+    state.textContent = 'API not reachable at ' + API + ' — start it to use this panel';
+    state.className = 'apistate down';
+  }
+}
+document.getElementById('tryform').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const box = document.getElementById('verdict');
+  box.innerHTML = '<div class="hint">Asking the policy engine…</div>';
+  try{
+    const r = await fetch(API + '/api/policy/evaluate', {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({action: document.getElementById('taction').value,
+                            scenario: scen.value, scheduled_delay_hours: 24}),
+    });
+    const d = await r.json();
+    const yes = d.authority_minted;
+    box.innerHTML =
+      '<div class="vhead"><span class="vbig ' + (yes?'yes':'no') + '">' +
+        (yes ? 'AUTHORISED' : (d.decision === 'REQUIRE_APPROVAL' ? 'NEEDS A HUMAN' : 'REFUSED')) +
+      '</span><span class="vrule">decided by ' + d.rule + ' · risk ' + d.risk_level + '</span></div>' +
+      '<div class="vreason">' + d.reason + '</div>' +
+      '<div class="vreason" style="color:var(--muted)">' +
+        (yes ? 'An AuthorizedAction was minted, so this could reach the provider.'
+             : 'No AuthorizedAction was minted, so nothing can reach the provider.') +
+        (d.in_action_space ? '' : ' The action you submitted is not in the action space at all.') +
+      '</div>' +
+      '<div class="vtrace"><div class="t">rules consulted, in order</div><div class="chips">' +
+        d.rules_evaluated.map(x =>
+          '<span class="chip ' + (x === d.rule ? 'hit' : 'pass') + '">' + x + '</span>').join('') +
+      '</div></div>';
+  }catch(e){
+    box.innerHTML = '<div class="hint">Could not reach the API at ' + API +
+      '. Start it with <code>PYTHONPATH=src:. python -m uvicorn apps.api.main:app --port 8000</code></div>';
+  }
+});
+boot();
+</script>
+</body>
+</html>
