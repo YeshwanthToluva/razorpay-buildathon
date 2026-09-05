@@ -91,6 +91,9 @@ section{padding:40px 0;border-bottom:1px solid var(--line-soft)}
 .rule{display:grid;grid-template-columns:34px 232px 132px minmax(0,1fr);gap:16px;align-items:baseline;
   padding:12px 15px;background:var(--surface);border:1px solid var(--line-soft);
   border-radius:var(--radius)}
+/* the rule the agent map sent you to read */
+.rule.found{border-color:var(--accent);background:var(--accent-soft);
+  box-shadow:0 0 0 1px var(--accent)}
 @media (max-width:820px){.rule{grid-template-columns:30px 1fr;gap:8px}
   .rule .out{grid-column:2} .rule .why{grid-column:2}}
 .rule:hover{background:var(--surface-2)}
@@ -164,6 +167,7 @@ footer code{font-family:var(--mono)}
   <div class="brand">Revenue Recovery Lab <span>· the rulebook</span></div>
   <div class="navlinks">
     <a href="index.html">← Study</a><a href="index.html#live">Live</a>
+    <a href="agent.html">Agent map</a>
     <a href="#rules">Rules</a><a href="#limits">Limits</a><a href="#try">Try it</a>
   </div>
 </div></nav>
@@ -257,7 +261,7 @@ const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; i
 document.getElementById('stamp').innerHTML =
   [['policy', RB.policy_version], ['fingerprint', RB.fingerprint],
    ['rules', RB.rules.length], ['pure', 'no I/O, no model'],
-   ['tests', '147']]
+   ['tests', '208']]
   .map(([k,v]) => '<div><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
 document.getElementById('rulecount').textContent = RB.rules.length + ' rules';
 document.getElementById('fp').textContent = RB.policy_version + ' · ' + RB.fingerprint;
@@ -266,6 +270,7 @@ document.getElementById('fp').textContent = RB.policy_version + ' · ' + RB.fing
 const rulesBox = document.getElementById('rules');
 RB.rules.forEach(r => {
   const row = el('div','rule' + (r.rule === 'PERMITTED' || r.rule === 'DEFAULT_DENY' ? ' terminal' : ''));
+  row.id = 'rule-' + r.rule;
   row.append(el('div','n', String(r.order)));
   row.append(el('div','id', r.rule));
   row.append(el('div','out ' + r.outcome, r.outcome === 'REQUIRE_APPROVAL' ? 'NEEDS A HUMAN' : r.outcome));
@@ -285,6 +290,19 @@ const pick = document.getElementById('tpick');
 RB.action_space.forEach(a => pick.append(new Option(
   a + (RB.always_available.includes(a) ? '  (always available)' : ''), a)));
 pick.value = 'GENERATE_PAYMENT_LINK';
+
+/* arriving from the agent map: find the rule you were sent to read */
+function focusHash(){
+  const id = decodeURIComponent(location.hash.slice(1));
+  if(!id.startsWith('rule-')) return;
+  const row = document.getElementById(id);
+  if(!row) return;
+  document.querySelectorAll('.rule.found').forEach(n => n.classList.remove('found'));
+  row.classList.add('found');
+  row.scrollIntoView({block:'center', behavior:'smooth'});
+}
+addEventListener('hashchange', focusHash);
+setTimeout(focusHash, 60);
 
 const EXAMPLES = [
   ['GENERATE_PAYMENT_LINK', 'checkout_card_declined', 'allowed', 'yes'],

@@ -1,0 +1,193 @@
+{
+  "actions": [
+    {
+      "action": "RETRY_PAYMENT",
+      "kind": "financial",
+      "says": "charge the instrument again now",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED",
+        "RECOVERY_WINDOW_EXPIRED",
+        "MAX_RETRY_LIMIT",
+        "RISK_TYPE_PRECONDITION",
+        "ACTION_PRECONDITION",
+        "HIGH_VALUE_APPROVAL"
+      ],
+      "reaches": [
+        "rail",
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "SCHEDULE_RETRY",
+      "kind": "financial",
+      "says": "charge it again later",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED",
+        "RECOVERY_WINDOW_EXPIRED",
+        "MAX_RETRY_LIMIT",
+        "RISK_TYPE_PRECONDITION",
+        "ACTION_PRECONDITION"
+      ],
+      "reaches": [
+        "rail",
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "SEND_PAYMENT_REMINDER",
+      "kind": "communication",
+      "says": "tell the customer it is outstanding",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED"
+      ],
+      "reaches": [
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "GENERATE_PAYMENT_LINK",
+      "kind": "communication",
+      "says": "give the customer another way to pay",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED"
+      ],
+      "reaches": [
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "REQUEST_HUMAN_REVIEW",
+      "kind": "valve",
+      "says": "hand the case to a person",
+      "always_available": true,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE"
+      ],
+      "reaches": []
+    },
+    {
+      "action": "STOP_RECOVERY",
+      "kind": "valve",
+      "says": "close the case and stop",
+      "always_available": true,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE"
+      ],
+      "reaches": []
+    }
+  ],
+  "rules": [
+    {
+      "rule": "UNSUPPORTED_ACTION",
+      "order": 1
+    },
+    {
+      "rule": "PAYMENT_MISMATCH",
+      "order": 2
+    },
+    {
+      "rule": "TERMINAL_STATE",
+      "order": 3
+    },
+    {
+      "rule": "SAFETY_VALVE",
+      "order": 4
+    },
+    {
+      "rule": "DISPUTE_BLOCK",
+      "order": 5
+    },
+    {
+      "rule": "FRAUD_HOLD",
+      "order": 6
+    },
+    {
+      "rule": "OPT_OUT_COMMUNICATION",
+      "order": 7
+    },
+    {
+      "rule": "RECIPIENT_NOT_ALLOWLISTED",
+      "order": 8
+    },
+    {
+      "rule": "RECOVERY_WINDOW_EXPIRED",
+      "order": 9
+    },
+    {
+      "rule": "MAX_RETRY_LIMIT",
+      "order": 10
+    },
+    {
+      "rule": "RETRY_COOLDOWN",
+      "order": 11
+    },
+    {
+      "rule": "RISK_TYPE_PRECONDITION",
+      "order": 12
+    },
+    {
+      "rule": "ACTION_PRECONDITION",
+      "order": 13
+    },
+    {
+      "rule": "CONTACT_BUDGET",
+      "order": 14
+    },
+    {
+      "rule": "HIGH_VALUE_APPROVAL",
+      "order": 15
+    }
+  ],
+  "content_rules": [
+    "UNAUTHORISED_COMMITMENT",
+    "FABRICATED_AMOUNT",
+    "MISSING_REQUIRED_FACT",
+    "PRESSURE_OR_THREAT",
+    "ASKS_FOR_CREDENTIALS",
+    "LEAKS_INTERNALS",
+    "CONTRADICTS_THE_CASE",
+    "OVERLONG"
+  ],
+  "tool_scope": [
+    "GMAIL_SEND_EMAIL"
+  ],
+  "policy_version": "policy-v2",
+  "fingerprint": "3e70292a481ecc65",
+  "note": "Edges from an action to the rules that gate it are observed: every action was put to the policy engine against every scenario in the dataset, in both the simulated and the live-email configuration, and the rules that refused it were recorded. Nothing here is hand-written except the plain-English gloss."
+}

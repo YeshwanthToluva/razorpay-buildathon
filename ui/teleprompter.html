@@ -110,224 +110,117 @@ body.short [data-opt]{display:none}
 
 <div id="stage"><div id="script">
 
-<h2>SHOT LIST<span class="t">set up before you hit record · not spoken</span></h2>
+<h2>SHOT LIST<span class="t">set up before you record · not spoken</span></h2>
 <div class="shot">
   <h3>Before you start</h3>
   <table>
-    <tr><td>API</td><td>restart uvicorn on :8000 — it must be running the current code</td></tr>
-    <tr><td>Site</td><td>localhost:3000 · <b>hard reload</b> (Ctrl+Shift+R)</td></tr>
-    <tr><td>Inbox</td><td>Gmail open in a second tab, logged in as nitintoluva@gmail.com</td></tr>
+    <tr><td>API</td><td>uvicorn on :8000 restarted <b>after</b> the last code change</td></tr>
+    <tr><td>Site</td><td>localhost:3000 · hard reload (Ctrl+Shift+R)</td></tr>
+    <tr><td>Tabs</td><td>1 the site · 2 Gmail (nitintoluva@gmail.com) · 3 agent.html · 4 the repo</td></tr>
     <tr><td>Channel</td><td class="v">Real email — you get it, you pay it</td></tr>
     <tr><td>Agent</td><td class="v">Reasoning agent (gpt-5.4-mini)</td></tr>
   </table>
 </div>
-
 <div class="shot">
-  <h3>Take 1 — the loop closes · section 03</h3>
+  <h3>Which RISK to pick</h3>
   <table>
-    <tr><td>RISK</td><td class="v">failed_retry_then_recovery</td></tr>
-    <tr><td>case</td><td>pay_0042 · <span class="k">₹1,776</span> · insufficient funds · 1 retry already used</td></tr>
-    <tr><td>expect</td><td>every action ALLOWED → agent acts → <b>real email arrives</b> →
-        you click Pay → case closes as <span class="k">Collected ₹1,776</span></td></tr>
-    <tr><td>why this</td><td>it is the same case as the message comparison in chapter 02 —
-        the one already on the site</td></tr>
+    <tr><td>the demo</td><td class="v">failed_retry_then_recovery</td></tr>
+    <tr><td></td><td>pay_0042 · <span class="k">₹1,776</span> · every action allowed · runs clean end to end</td></tr>
+    <tr><td>a refusal</td><td class="v">customer_opt_out</td></tr>
+    <tr><td></td><td>pay_0030 · ₹2,401 · <span class="k">OPT_OUT_COMMUNICATION</span></td></tr>
+    <tr><td>needs a human</td><td class="v">high_value_transaction</td></tr>
+    <tr><td></td><td>pay_0034 · ₹38,035 · <span class="k">HIGH_VALUE_APPROVAL</span></td></tr>
+    <tr><td>avoid</td><td>customer_dispute — refuses with TERMINAL_STATE, reads as a dead case</td></tr>
   </table>
 </div>
 
-<div class="shot">
-  <h3>Take 2 — the boundary refuses · section 05</h3>
-  <table>
-    <tr><td>RISK</td><td class="v">possible_fraud</td></tr>
-    <tr><td>case</td><td>pay_0027 · ₹8,459 · fraud suspected</td></tr>
-    <tr><td>expect</td><td><span class="k">FRAUD_HOLD</span> on every action the agent can pick.
-        No email is sent. Nothing executes.</td></tr>
-    <tr><td>or</td><td class="v">customer_opt_out</td></tr>
-    <tr><td></td><td>pay_0030 · ₹2,401 · <span class="k">OPT_OUT_COMMUNICATION</span> —
-        stronger line: the customer said don't contact me, and in live mode that blocks
-        <b>charging them</b> too, not just messaging</td></tr>
-  </table>
-</div>
+<h2>00 · Open<span class="t">25s · camera</span></h2>
+<p class="cue">[Site on screen, nothing running. Say it plainly. Do not perform it.]</p>
+<p>Three things quietly lose revenue for anyone taking payments online.
+A payment fails. A customer leaves checkout. An invoice goes past due.</p>
+<p>In all three the money already exists. It just does not arrive.</p>
+<p>We built an agent that goes and gets it. The interesting part is not that it works.
+It is what we had to build so it is <b>safe to run</b>.</p>
 
-<div class="shot">
-  <h3>Take 3 — held for a human · optional</h3>
-  <table>
-    <tr><td>RISK</td><td class="v">high_value_transaction</td></tr>
-    <tr><td>case</td><td>pay_0034 · <span class="k">₹38,035</span> · above the ₹10,000 threshold</td></tr>
-    <tr><td>expect</td><td><span class="k">HIGH_VALUE_APPROVAL</span> → NEEDS A HUMAN.
-        At autonomy level 2 no human exists, so it does not execute either.</td></tr>
-  </table>
-</div>
+<h2>01 · What it does<span class="t">30s</span></h2>
+<p>It handles those three kinds of revenue at risk.</p>
+<p>It can take six actions. Retry the payment. Schedule a retry. Send a payment link.
+Send a reminder. Ask a human. Stop.</p>
+<p><b>That list is closed.</b> If the model names anything outside it, the request is rejected
+before anything else is even looked at.</p>
 
-<div class="shot">
-  <h3>Take 4 — grounded, not just bounded · pairs with section 06</h3>
-  <table>
-    <tr><td>RISK</td><td class="v">checkout_abandoned</td></tr>
-    <tr><td>case</td><td>pay_0051 · ₹5,620 · nothing was ever authorised — <b>there is no card</b></td></tr>
-    <tr><td>expect</td><td>retry refused by <span class="k">RISK_TYPE_PRECONDITION</span>;
-        payment link allowed. If the model writes “your card on file”, the content policy
-        refuses it with <span class="k">CONTRADICTS_THE_CASE</span> and the template goes
-        instead — that refusal is the best 10 seconds in the video.</td></tr>
-  </table>
-</div>
+<h2>02 · The boundary<span class="t">55s · the core</span></h2>
+<p class="cue">[Switch to agent.html — the map. Let it sit on screen while you talk.]</p>
+<p><b>The model proposes. It never executes.</b></p>
+<p>Between the proposal and the money there is a policy engine.
+<span class="num">Fifteen</span> rules, fixed order, first refusal wins,
+and the list ends in <b>default-deny</b>. Pure code — no model, no network, no database.</p>
+<p>This is not a convention we agreed to follow. The provider that moves money only accepts
+a type called <em>AuthorizedAction</em>. That type can only be constructed inside the policy
+module. Build one anywhere else and you get <b>PolicyBypassError</b>.</p>
+<p>So you cannot skip the check by accident. <b>There is no route to the money that goes
+around it.</b></p>
+<p data-opt="1">This map is generated from the code, not drawn by hand. Every line from an action
+to a rule was measured by running that action against every case in the dataset.</p>
 
-<div class="shot">
-  <h3>Do not pick these on camera</h3>
-  <table>
-    <tr><td>customer_dispute</td><td>refuses with TERMINAL_STATE, not DISPUTE_BLOCK —
-        the case is already closed, so it reads as a dead case rather than a boundary</td></tr>
-    <tr><td>recovery_window_expired</td><td>₹518 · correct, but the amount is too small
-        to land on camera</td></tr>
-  </table>
-</div>
-
-<div class="shot">
-  <h3>Every RISK option, and what the policy does to it</h3>
-  <table>
-    <tr><td>transient_bank_failure</td><td>₹5,666 · all allowed</td></tr>
-    <tr><td>insufficient_funds</td><td>₹5,684 · all allowed</td></tr>
-    <tr><td>expired_payment_method</td><td>₹5,518 · retry → ACTION_PRECONDITION; link allowed</td></tr>
-    <tr><td>repeated_payment_failure</td><td>₹7,977 · all allowed</td></tr>
-    <tr><td>customer_dispute</td><td>₹4,287 · TERMINAL_STATE</td></tr>
-    <tr><td>possible_fraud</td><td>₹8,459 · <span class="k">FRAUD_HOLD</span></td></tr>
-    <tr><td>customer_opt_out</td><td>₹2,401 · <span class="k">OPT_OUT_COMMUNICATION</span></td></tr>
-    <tr><td>high_value_transaction</td><td>₹38,035 · <span class="k">HIGH_VALUE_APPROVAL</span></td></tr>
-    <tr><td>successful_retry</td><td>₹5,700 · all allowed</td></tr>
-    <tr><td>failed_retry_then_recovery</td><td>₹1,776 · all allowed ← <b>the demo case</b></td></tr>
-    <tr><td>mandate_revoked</td><td>₹2,077 · retry → ACTION_PRECONDITION; link allowed</td></tr>
-    <tr><td>recovery_window_expired</td><td>₹518 · <span class="k">RECOVERY_WINDOW_EXPIRED</span></td></tr>
-    <tr><td>max_retries_reached</td><td>₹6,975 · retry → <span class="k">MAX_RETRY_LIMIT</span>; link allowed</td></tr>
-    <tr><td>checkout_abandoned</td><td>₹5,620 · retry → RISK_TYPE_PRECONDITION; link allowed</td></tr>
-    <tr><td>checkout_card_declined</td><td>₹7,553 · retry → RISK_TYPE_PRECONDITION; link allowed</td></tr>
-    <tr><td>checkout_abandoned_opted_out</td><td>₹2,084 · OPT_OUT_COMMUNICATION</td></tr>
-    <tr><td>receivable_overdue_with_mandate</td><td>₹7,516 · all allowed</td></tr>
-    <tr><td>receivable_no_mandate</td><td>₹4,815 · retry → RISK_TYPE_PRECONDITION; link allowed</td></tr>
-    <tr><td>receivable_high_value</td><td>₹44,583 · <span class="k">HIGH_VALUE_APPROVAL</span></td></tr>
-  </table>
-</div>
-
-<h2>00 · Cold open<span class="t">~20s · camera on you</span></h2>
-<p class="cue">[Screen: the Live tab, nothing running yet. Sit still. Do not rush this one.]</p>
-<p>A payment fails. A customer walks away from a checkout. An invoice goes past due.</p>
-<p>Every one of those is <b>revenue that already exists</b> and is about to stop existing.</p>
-<p>The obvious fix is to hand it to an AI agent. The obvious problem is that you have just given
-a language model access to <b>money</b>.</p>
-<p class="beat">[beat]</p>
-<p>So we built the agent. And then we spent most of our time trying to prove it could not be trusted.</p>
-
-<h2>01 · What it is<span class="t">~40s</span></h2>
-<p class="cue">[Screen: scroll to “01 How it works”.]</p>
-<p>This is a revenue recovery agent. It detects revenue at risk, decides the right intervention,
-and executes a <b>bounded</b> recovery workflow.</p>
-<p data-opt="1">Three kinds of risk: a failed payment, an abandoned checkout, an overdue receivable.</p>
-<p data-opt="1">Six actions it can take — retry the payment, schedule a retry, generate a payment link,
-send a reminder, request a human, stop recovery. <em>That list is closed.</em>
-If the model invents a seventh, it is rejected before anything else is even considered.</p>
-
-<h2>02 · The one idea<span class="t">~50s · the core of the pitch</span></h2>
-<p class="cue">[Screen: the architecture strip. Slow down here. This is the whole thesis.]</p>
-<p>Here is the only architectural idea that matters.</p>
-<p><b>The model never executes anything.</b> It proposes.</p>
-<p>Between the proposal and the money sits a deterministic policy engine —
-<span class="num">15</span> rules, evaluated in a fixed order, first refusal wins,
-and the list <b>ends in default-deny</b>. Pure functions. No I/O. No model.</p>
-<p>And it is not a convention — it is the <b>type system</b>. The provider that moves money
-will only accept an <em>AuthorizedAction</em>, and an <em>AuthorizedAction</em> can only be
-minted inside the policy module. There is no other constructor.</p>
-<p>If any code tries to build one elsewhere, it does not misbehave — <b>it raises
-PolicyBypassError</b>. You cannot forget to check the policy, because you cannot call the
-provider without the object that only the policy can produce.</p>
-<p class="beat" data-opt="1">[beat]</p>
-<p data-opt="1">Memory is what the agent knows. Policy is what it is allowed to do.
-<b>Knowing something is never permission to do it.</b></p>
-
-<h2>03 · Live run<span class="t">~2m · the demo</span></h2>
+<h2>03 · Live run<span class="t">110s · the demo</span></h2>
 <div class="shot">
   <h3>Take 1 — click by click</h3>
   <ol class="step">
-    <li>RISK → <span class="v">failed_retry_then_recovery</span> ·
-        CHANNEL → <span class="v">Real email</span> ·
-        AGENT → <span class="v">Reasoning agent</span></li>
-    <li>Press <b>Detect &amp; recover</b>. Stop talking. Let stage 1 and 2 land.</li>
-    <li>Stage 3 is the policy verdict — <b>read the rule name off the screen out loud.</b></li>
-    <li>Stage 4 is the agent writing the mail, and the content policy ruling on it.</li>
-    <li>Stage 5 — switch to Gmail. <b>Show the email actually sitting in the inbox.</b></li>
-    <li>Click the pay button in the mail. Pay on the page that opens.</li>
-    <li>Switch back. The run is still open, waiting — now it closes:
-        <span class="k">Collected ₹1,776</span>, and the receipt arrives.</li>
-    <li>Open <b>EXECUTION TRACE</b> at the bottom: model call, policy call, tool call,
-        each with its input, output and duration.</li>
+    <li>RISK <span class="v">failed_retry_then_recovery</span> · CHANNEL <span class="v">Real email</span> ·
+        AGENT <span class="v">Reasoning agent</span></li>
+    <li>Press <b>Detect &amp; recover</b>. Stop talking. Let stages 1 and 2 land.</li>
+    <li>Stage 3 — <b>read the rule name off the screen.</b></li>
+    <li>Stage 4 — the agent writes the mail, the content policy rules on it.</li>
+    <li>Stage 5 — switch to Gmail. <b>Show the mail in the inbox.</b></li>
+    <li>Click pay. Pay on the page that opens.</li>
+    <li>Back to the site — it closes: <span class="k">Collected ₹1,776</span>, receipt sent.</li>
+    <li>Open <b>EXECUTION TRACE</b>: model call, policy call, tool call, with inputs and timings.</li>
   </ol>
 </div>
+<p>Let me run one.</p>
+<p><b>One.</b> It finds the revenue at risk — the amount, why it is unpaid, and whether we are
+already owed it or about to lose the sale.</p>
+<p><b>Two.</b> The model decides. Its diagnosis, its action, its confidence.</p>
+<p><b>Three.</b> The policy engine rules on it, and names the rule it used.</p>
+<p><b>Four.</b> The agent writes the email — and what it writes is checked before it can leave.</p>
+<p><b>Five.</b> The email goes out, with a working payment link.</p>
+<p class="cue">[Gmail. Show the mail. Click pay. Pay.]</p>
+<p>I pay it. And the case closes — payment observed, revenue marked recovered, receipt sent.</p>
+<p>While it was waiting it did not retry, did not send a second message, and did not assume
+I had paid. <b>It waited for the money to actually arrive.</b></p>
 
-<p class="cue">[RISK = failed_retry_then_recovery (pay_0042, ₹1,776) · CHANNEL = Real email ·
-AGENT = Reasoning agent → press Detect &amp; recover. Narrate the stages as they land.
-If it lags, stop talking and let it land.]</p>
-<p>Let me just run one.</p>
-<p><b>One.</b> It detects the revenue at risk — the amount, why it is unpaid,
-and whether we are already owed the money or about to lose the sale entirely.</p>
-<p><b>Two.</b> The agent decides. That is the model — its diagnosis, its chosen action,
-its confidence.</p>
-<p><b>Three.</b> The policy engine rules on it. Watch this line: it names the exact rule
-and the reason. Allowed, refused, or held for a human.</p>
-<p><b>Four.</b> Now the part I actually want you to see. The agent <b>writes the email itself</b> —
-and everything it writes goes through a <em>second</em> boundary before it can leave.</p>
-<p class="cue">[If the content policy refuses it, the refused draft is on screen struck through — stop and
-point at it. That is the best moment in the demo. If it passes, say the next line instead.]</p>
-<p data-opt="1">A content policy — eight rules over open prose. It refuses a promise nobody authorised.
-It refuses an amount that is not the amount owed. It refuses collections pressure.
-It refuses anything that reads like phishing. It refuses internal jargon leaking into
-a customer's inbox.</p>
-<p><b>Five.</b> A real email leaves — with a real payment link.</p>
-<p class="cue">[Switch to your inbox. Show the mail. Click the link. Pay.]</p>
-<p>I pay it. And the agent closes the loop — it observes the payment, marks the revenue
-recovered, and sends the receipt.</p>
-<p>Notice what it did <b>not</b> do while it was waiting. It did not retry. It did not message
-me again. It did not guess. <b>It parked the case until real money actually arrived.</b></p>
+<h2>04 · The tools<span class="t">30s · Composio</span></h2>
+<p>The email is real. It goes out through <b>Composio's Gmail MCP tool</b> on a connected account.</p>
+<p>A Gmail toolkit can read mail, list contacts, manage drafts. <b>This agent has one action</b> —
+<em>GMAIL_SEND_EMAIL</em>. Anything else raises ToolScopeError.</p>
+<p>And who it may email is not decided by the mail tool. <b>It is decided by the policy engine</b>,
+before the tool is reached at all.</p>
 
-<h2>04 · The tools<span class="t">~35s · Composio</span></h2>
-<p class="cue">[Screen: the trace panel — the tool span. Or the Composio dashboard.]</p>
-<p>The email is real. It goes out over <b>Composio's Gmail MCP tool</b>, on my own connected
-account, over their REST API.</p>
-<p>And this is where most agent demos quietly cheat. A Gmail toolkit can read your mail,
-list your contacts, manage your drafts. <b>Our agent gets exactly one action:</b>
-<em>GMAIL_SEND_EMAIL</em>. One entry in an allowlist. Anything else raises ToolScopeError.</p>
-<p data-opt="1">And the recipient? That is not checked by the mail tool. <b>It is checked by the policy
-engine</b> — because a tool that validates its own recipients is a convention, and a rule the
-gateway consults before minting authority is a boundary.</p>
+<h2>05 · Does the boundary hold<span class="t">55s</span></h2>
+<p class="cue">[Safety section. Then click one blocked attempt.]</p>
+<p>Across our runs the agent proposed <span class="num">137</span> actions the policy engine
+did not authorise.</p>
+<p><span class="num">113</span> refused outright. <span class="num">24</span> were high value and
+routed to a human — and there is no human at this autonomy level, so those did not run either.</p>
+<p>Actions that reached the provider without approval: <b><span class="num">zero</span>.</b>
+In every run.</p>
+<p>These are not screenshots. Click any refusal and it <b>re-runs that request against the live
+engine</b> — the verdict, the rule that decided, and every rule it checked on the way.</p>
 
-<h2>05 · The evidence<span class="t">~70s · the strongest section</span></h2>
-<p class="cue">[Screen: Safety tab. Then click a blocked attempt to open the modal.]</p>
-<p>So: does the boundary actually hold? We have receipts.</p>
-<p>Across the runs, the agent proposed <span class="num">137</span> actions that the policy
-engine <b>did not authorise</b>.</p>
-<p><span class="num">113</span> were refused outright. <span class="num">24</span> were high-value
-and held for a human — and at this autonomy level there is no human, so they did not execute
-either.</p>
-<p>Actions that reached the provider without an approval: <b><span class="num">zero</span>.</b>
-Not low. <b>Zero.</b> Every single run.</p>
-<p class="cue">[Click one blocked attempt. The modal re-runs it against the live engine.]</p>
-<p>And these are not screenshots. Click any refusal and it <b>re-runs that exact request against
-the live policy engine right now</b> — the verdict, the deciding rule, the full list of rules
-consulted, and the fact that no AuthorizedAction was ever minted.</p>
-<p data-opt="1">Retry cooldown stopped <span class="num">38</span>. Retry limit, <span class="num">33</span>.
-High value, <span class="num">24</span>. Expired recovery window, <span class="num">21</span>.
-Fraud hold, <span class="num">5</span>.</p>
-<p><b>The agent tried. The rulebook said no. Every time, on the record.</b></p>
-
-<h2>06 · What it does that rules cannot<span class="t">~55s</span></h2>
-<p class="cue">[Screen: chapter 02 — the message comparison, template on the left, agent on the right.]</p>
-<p>Now — if the policy engine is that strict, why have an agent at all?</p>
-<p>Here is the same failed payment, written two ways.</p>
+<h2>06 · Why a model at all<span class="t">60s</span></h2>
+<p>If the rules are that strict, why use a model.</p>
+<p>Same failed payment, two messages.</p>
 <div class="shot">
-  <h3>on screen · inv_0042 · ₹1,776 · 9 lifetime payments, 5 successful</h3>
+  <h3>on screen · inv_0042 · ₹1,776 · 9 payments, 5 successful</h3>
   <div class="ex">
     <div>
-      <div class="h">A rule set can only send this</div>
+      <div class="h">The rule set</div>
       <p class="tmpl">We were unable to collect Rs 1,776.00 for invoice inv_0042, because your
       bank declined the payment. You can settle it using the link below.</p>
     </div>
     <div>
-      <div class="h a">The agent wrote this</div>
+      <div class="h a">The agent</div>
       <p>We couldn't collect Rs 1,776.00 for invoice inv_0042 because the payment attempt
       was declined.</p>
       <p><b>This was the first attempt, and a second try often goes through.</b> If your card
@@ -336,84 +229,62 @@ Fraud hold, <span class="num">5</span>.</p>
     </div>
   </div>
 </div>
-<p>The rule set: <em>“We were unable to collect one thousand seven hundred and seventy six rupees
-for invoice inv double-oh forty-two, because your bank declined the payment.”</em>
-Correct. Mechanical. Identical for every customer who ever hits that code.</p>
-<p>The agent, on the same case: it says <b>this was the first attempt, and a second try often
-goes through</b>. It offers a way out if the card was replaced. It invites a reply.</p>
-<p data-opt="1">That is the line a template cannot write, because <b>a template does not know which case
-it is in.</b> Nine lifetime payments, five successful, one decline. That is not a debtor —
-that is a good customer with a bank that hiccupped, and the message should sound like it.</p>
-<p class="cue">[Scroll to the third message on that page — the refused one.]</p>
-<p>And here is why the second boundary exists.</p>
-<p>Same agent, an <b>abandoned checkout</b> — a customer who left before paying,
-so <b>nothing was ever authorised and no card exists.</b></p>
-<p>The agent wrote: <em>“The card on file appears to be unavailable for this charge.”</em></p>
+<p>The rule set says the bank declined it. Every customer gets that same sentence.</p>
+<p>The agent says <b>this was the first attempt and a second usually goes through</b> — because
+this customer has paid nine times and five went through clean. Then it offers a way out,
+and invites a reply.</p>
+<p class="cue">[Scroll to the third message — the refused one.]</p>
+<p>And here is the same agent on an abandoned checkout, where nothing was ever authorised
+and <b>there is no card</b>.</p>
 <div class="shot">
   <div class="rej">
     <div class="lab">content policy · REFUSED · CONTRADICTS_THE_CASE</div>
     <s>The card on file appears to be unavailable for this charge.</s>
-    <div style="margin-top:.45em">the message describes a payment instrument, but nothing was
-    ever authorised on this case, so no card exists and no charge was attempted</div>
+    <div style="margin-top:.45em">nothing was ever authorised on this case, so no card exists
+    and no charge was attempted</div>
   </div>
 </div>
-<p>There is no card. The model invented one. <b>That message was never sent</b> — the
-deterministic template went instead, and the refusal is on the record.</p>
-<p class="beat">[beat]</p>
-<p><b>The rule set governs what may happen. The agent governs how it reads.</b>
-And the content policy is what makes the second one safe enough to ship.</p>
+<p>There is no card. The model invented one. <b>That message was never sent</b> — the template
+went instead, and the refusal is in the record.</p>
+<p>That is the trade. <b>The model writes better. The boundary is what makes it safe to let it.</b></p>
 
-<h2>07 · The honest part<span class="t">~55s · do not skip this</span></h2>
-<p class="cue">[Screen: the docs folder on GitHub, or the experiments list.]</p>
-<p>One more thing, and it is the part I would want to hear if I were you.</p>
-<p>We ran <span class="num">21</span> recorded runs and wrote <span class="num">4</span> experiment
-records. Two of them <b>falsified our own hypotheses.</b></p>
-<p>We thought the agent would recover more revenue than a fixed rule set. <b>It did not.</b>
-The rule set won on recovery rate, and we published that.</p>
-<p data-opt="1">We thought the agent was failing because it lacked context. So we gave it perfect context.
-Context fidelity went up sharply. <b>Revenue did not move.</b></p>
-<p>We thought it was failing because it never learned its retries failed. So we fed every outcome
-back. Absorption went from <span class="num">47%</span> to <span class="num">87%</span>.
-Revenue did not move — <b>to the rupee.</b></p>
-<p class="beat" data-opt="1">[beat]</p>
-<p data-opt="1">Two experiments improved what the agent <em>knew</em> and neither moved the outcome.
-That is real evidence that the remaining gap is <b>not an information problem</b> —
-and it is why the next experiment is a different one. That is in the repo too, with the
+<h2>07 · What we actually found<span class="t">40s</span></h2>
+<p class="cue">[The docs folder, or the experiments list.]</p>
+<p>We ran <span class="num">21</span> recorded runs and wrote <span class="num">four</span>
+experiment records. <b>Two of them falsified what we expected.</b></p>
+<p>We expected the agent to recover more than a fixed rule set. It recovered <b>less</b>.
+We published that.</p>
+<p data-opt="1">We thought it needed better context. Then we thought it needed to know its
+retries had failed. Both improved what the agent knew. Neither changed what it recovered —
+the second one identical <b>to the rupee</b>.</p>
+<p data-opt="1">So the remaining gap is not an information problem. That is in the repo,
 negative results kept in.</p>
 
-<h2>08 · Close<span class="t">~30s</span></h2>
-<p class="cue">[Screen: the repo. Then back to camera for the last two lines.]</p>
-<p>Everything is public. The dataset, hash-pinned. The audit ledger, append-only,
-enforced by database triggers. Every execution trace. Every refusal.
-<span class="num">375</span> tests — <span class="num">208</span> of them on the policy engine
-alone, <span class="num">19</span> adversarial tests where a deliberately hostile agent tries
-to get something dangerous past the boundary.</p>
-<p>It never does.</p>
+<h2>08 · Close<span class="t">20s</span></h2>
+<p>Everything is public. The dataset, hash-pinned. The ledger, append-only. Every execution
+trace and every refusal.</p>
+<p><span class="num">375</span> tests — <span class="num">208</span> on the policy engine, and
+<span class="num">19</span> where a deliberately hostile agent tries to get something dangerous
+past the boundary. <b>It does not get through.</b></p>
 <p class="beat">[beat]</p>
-<p>So — can an AI agent recover revenue?</p>
-<p><b>It can. But that was never the hard part.</b></p>
-<p>The hard part is building the thing so that when the model is wrong — and it <b>will</b> be
-wrong — <b>being wrong is not the same as being dangerous.</b></p>
-<p>That is what we built. Thank you.</p>
+<p>An agent that recovers revenue is not the hard part.</p>
+<p><b>An agent you would let near revenue is.</b> That is what we built. Thank you.</p>
 
 <hr>
-<p class="cue">[END. Stop recording. Backup lines below if you need them for Q&amp;A.]</p>
+<p class="cue">[END. Stop recording. Backup facts below for questions.]</p>
 
-<h2>Q&amp;A · backup facts<span class="t">not part of the take</span></h2>
-<p class="cue">Data is fully synthetic — no real customer, payment or communication data,
-and no real money moves. The provider is a simulator.</p>
-<p class="cue">Email allowlist is hard-coded to one address and enforced in the policy engine,
-not the mail tool. Empty allowlist denies everyone — a misconfigured deploy sends nothing,
-not everything.</p>
-<p class="cue">Simulator outcomes are a keyed hash of seed, payment, action and attempt —
-so a result never depends on the order cases ran in. Same seed, same answer.</p>
-<p class="cue">Policy config is fingerprinted over the thresholds AND the rule list, so adding
-a rule changes the fingerprint. Every run records the fingerprint it ran under.</p>
-<p class="cue">Two orthogonal state variables: payment_state is financial truth,
-recovery_state is orchestration. Money in the ledger is integer paise, never a float.</p>
-<p class="cue">Autonomy Level 2: model proposes, deterministic policy disposes, no human in the
-loop. Escalation is therefore terminal — which is exactly why the agent's over-escalation
-cost it revenue, and we measured that at 94.6% of the gap.</p>
+<h2>Q&amp;A · backup<span class="t">not part of the take</span></h2>
+<p class="cue">All data is synthetic. No real customer or payment data, and no real money moves —
+the payment rail is a simulator.</p>
+<p class="cue">The email allowlist holds one address and is enforced in the policy engine, not the
+mail tool. An empty allowlist denies everyone, so a misconfigured deploy sends nothing.</p>
+<p class="cue">Simulator outcomes are a keyed hash of seed, payment, action and attempt, so a result
+never depends on what order cases ran in.</p>
+<p class="cue">The policy fingerprint covers the thresholds and the rule list, so adding a rule
+changes it. Every run records the fingerprint it ran under.</p>
+<p class="cue">Autonomy Level 2 — model proposes, deterministic policy disposes, no human in the
+loop. Escalation is therefore terminal, which is why over-escalation cost the agent revenue;
+we measured it at 94.6% of the gap.</p>
 
 </div></div>
 

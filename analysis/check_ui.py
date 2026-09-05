@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PAGES = ("ui/index.html", "ui/rulebook.html")
+PAGES = ("ui/index.html", "ui/rulebook.html", "ui/agent.html")
 
 STUB = r"""
 const fs = require('fs');
@@ -60,6 +60,10 @@ global.window = {
   getComputedStyle:()=>({getPropertyValue:()=>''}), innerWidth:1440, innerHeight:900,
 };
 global.IntersectionObserver = function(){ this.observe=()=>{}; this.disconnect=()=>{}; };
+global.addEventListener = () => {};
+global.removeEventListener = () => {};
+global.setTimeout = setTimeout; global.clearTimeout = clearTimeout;
+global.getComputedStyle = () => ({getPropertyValue:()=>''});
 global.requestAnimationFrame = window.requestAnimationFrame;
 global.matchMedia = window.matchMedia;
 global.location = window.location;

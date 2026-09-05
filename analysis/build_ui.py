@@ -18,17 +18,24 @@ OUT = ROOT / "ui" / "index.html"
 PAGES = [
     (ROOT / "ui" / "template.html", ROOT / "ui" / "index.html"),
     (ROOT / "ui" / "rulebook_template.html", ROOT / "ui" / "rulebook.html"),
+    (ROOT / "ui" / "agent_template.html", ROOT / "ui" / "agent.html"),
 ]
+
+#: The agent map is built from the code by analysis/build_agent_graph.py.
+GRAPH = ROOT / "analysis" / "agent_graph.json"
 
 
 def main() -> None:
     data = DATA.read_text().replace("</", "<\\/")
+    graph = GRAPH.read_text().replace("</", "<\\/") if GRAPH.exists() else "{}"
     shared = (ROOT / "ui" / "_shared.css").read_text()
     for template, out in PAGES:
         if not template.exists():
             continue
         html = template.read_text()
-        html = html.replace("__SHARED_CSS__", shared).replace("__CONSOLE_DATA__", data)
+        html = (html.replace("__SHARED_CSS__", shared)
+                    .replace("__CONSOLE_DATA__", data)
+                    .replace("__AGENT_GRAPH__", graph))
         out.write_text(html)
         print(f"wrote {out.relative_to(ROOT)} ({out.stat().st_size/1024:,.0f} KB)")
 

@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The agent map — Revenue Recovery Lab</title>
+<style>/* generated from ui/template.html -- do not edit */
+
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --surface-2:#eceeed; --line:#d5dbd9; --line-soft:#e4e9e7;
+  --ink:#14201e; --ink-2:#3d4c49; --muted:#65756f;
+  --accent:#0d7d78; --accent-soft:#d7ebe9; --accent-ink:#075450;
+  --good:#2f7a4f; --good-soft:#dcefe2;
+  --warn:#b4690e; --warn-soft:#f6e8d3;
+  --crit:#b3261e; --crit-soft:#f7dedc;
+  --grid:#e8ecea;
+  --radius:6px;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1211; --surface:#131b19; --surface-2:#1a2422; --line:#2a3634; --line-soft:#212c2a;
+    --ink:#e7edea; --ink-2:#c0ccc8; --muted:#8fa09b;
+    --accent:#3fb3ab; --accent-soft:#13312f; --accent-ink:#7fd3cc;
+    --good:#5fc088; --good-soft:#152a1f;
+    --warn:#dc9a45; --warn-soft:#2e2415;
+    --crit:#e0685f; --crit-soft:#301a19;
+    --grid:#1e2a28;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1211; --surface:#131b19; --surface-2:#1a2422; --line:#2a3634; --line-soft:#212c2a;
+  --ink:#e7edea; --ink-2:#c0ccc8; --muted:#8fa09b;
+  --accent:#3fb3ab; --accent-soft:#13312f; --accent-ink:#7fd3cc;
+  --good:#5fc088; --good-soft:#152a1f;
+  --warn:#dc9a45; --warn-soft:#2e2415;
+  --crit:#e0685f; --crit-soft:#301a19;
+  --grid:#1e2a28;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{text-wrap:balance;margin:0;font-weight:600;letter-spacing:-0.01em}
+a{color:var(--accent-ink)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:56px}
+.brand{font-weight:600;font-size:14px;letter-spacing:-0.01em;white-space:nowrap}
+.brand span{color:var(--accent);font-family:var(--mono)}
+.navlinks{display:flex;gap:2px;overflow-x:auto;margin-left:auto}
+.navlinks a{font-size:12.5px;color:var(--muted);text-decoration:none;padding:6px 10px;
+  border-radius:var(--radius);white-space:nowrap}
+.navlinks a:hover{color:var(--ink);background:var(--surface-2)}
+.navlinks a:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+</style>
+<style>
+.mapwrap{position:relative;padding:26px 0 10px}
+#edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#edges path{fill:none;stroke:var(--line);stroke-width:1.4;transition:stroke .18s,stroke-width .18s,opacity .18s}
+#edges path.hot{stroke:var(--accent);stroke-width:2.2}
+#edges path.dim{opacity:.18}
+
+.lanes{position:relative;z-index:1;display:grid;gap:26px}
+.lane{display:grid;grid-template-columns:132px 1fr;gap:18px;align-items:start}
+.lane .lab{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);padding-top:14px;line-height:1.5}
+.lane .lab b{display:block;color:var(--ink-2);font-weight:600;letter-spacing:.04em}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+
+.node{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:11px 14px;min-width:150px;position:relative;transition:border-color .18s,
+  box-shadow .18s,opacity .18s,transform .18s}
+.node .nt{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:-.01em}
+.node .ns{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.node .nk{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:5px}
+.node.dim{opacity:.24}
+.node.hot{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 6px 20px -12px var(--accent)}
+.node.click{cursor:pointer}
+.node.click:hover{transform:translateY(-1px);border-color:var(--accent)}
+.node.on{border-color:var(--accent);background:var(--accent-soft);
+  box-shadow:0 0 0 1px var(--accent)}
+
+.node.agent{min-width:280px;border-color:var(--accent);background:var(--accent-soft)}
+.node.boundary{min-width:100%;border-color:var(--accent);background:var(--accent-soft)}
+.node.valve{border-style:dashed}
+.node.ledger{border-color:var(--good)}
+.node.blockedtool{border-style:dashed;opacity:.55}
+
+.pillrow{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.rp{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;padding:3px 7px;border-radius:4px;
+  border:1px solid var(--line);color:var(--muted);text-decoration:none;background:var(--bg);
+  transition:color .15s,border-color .15s}
+a.rp:hover{color:var(--accent);border-color:var(--accent)}
+.rp.n{color:var(--muted);opacity:.7}
+
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:20px;padding-top:14px;
+  border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:7px}
+.legend i{width:22px;height:0;border-top:1.4px solid var(--line);display:inline-block}
+.legend i.a{border-color:var(--accent);border-top-width:2.2px}
+.legend b{width:11px;height:11px;border-radius:3px;border:1px solid var(--line);
+  background:var(--surface);display:inline-block}
+.legend b.acc{border-color:var(--accent);background:var(--accent-soft)}
+.legend b.dash{border-style:dashed}
+
+.hint{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+.detail{margin-top:22px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  padding:16px 18px;min-height:96px}
+.detail h4{margin:0 0 4px;font-family:var(--mono);font-size:13px}
+.detail .say{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+.detail .sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin:12px 0 6px}
+.detail .none{font-size:12.5px;color:var(--muted)}
+@media (max-width:820px){
+  .lane{grid-template-columns:1fr}
+  .lane .lab{padding-top:0}
+  #edges{display:none}
+}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="wrap">
+  <div class="brand">Revenue Recovery Lab <span>· the agent map</span></div>
+  <div class="navlinks">
+    <a href="index.html">← Study</a><a href="index.html#live">Live</a>
+    <a href="#map">Map</a><a href="rulebook.html">Rulebook</a>
+  </div>
+</div></nav>
+
+<header class="rb"><div class="wrap">
+  <div class="eyebrow">What the agent is, drawn from the code</div>
+  <h1>Everything the agent can do, and everything standing in its way.</h1>
+  <p class="sub">The model sits at the top. Nothing below it will act on the model's say-so.
+  Each action it may propose is a node; under each one are the rules that can refuse it, and the
+  tools it reaches if none of them do. Click an action to trace its route — click any rule to read
+  it in the rulebook.</p>
+  <div class="stamp" id="stamp"></div>
+</div></header>
+
+<section id="map"><div class="wrap">
+  <p class="hint" id="hint">Click any action below.</p>
+
+  <div class="mapwrap">
+    <svg id="edges"></svg>
+    <div class="lanes">
+
+      <div class="lane">
+        <div class="lab"><b>Sees</b>the case, as facts</div>
+        <div class="row">
+          <div class="node" id="n-case">
+            <div class="nk">input</div>
+            <div class="nt">The case</div>
+            <div class="ns">Amount, why it is unpaid, retries spent, contacts spent,
+            window, history. Facts only — never permission.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lane">
+        <div class="lab"><b>Decides</b>and nothing more</div>
+        <div class="row">
+          <div class="node agent" id="n-agent">
+            <div class="nk">model</div>
+            <div class="nt">LLMReasoner</div>
+            <div class="ns">Holds no database handle, no provider, no ledger. It returns a
+            <code class="mono">ProposedAction</code> and a sentence about why. That is its
+            entire authority.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lane">
+        <div class="lab"><b>Proposes</b>a closed list</div>
+        <div class="row" id="acts"></div>
+      </div>
+
+      <div class="lane">
+        <div class="lab"><b>Is judged</b>deterministically</div>
+        <div class="row">
+          <div class="node boundary click" id="n-policy">
+            <div class="nk">boundary · pure, no model, no I/O</div>
+            <div class="nt">Policy engine <span id="rulen" style="color:var(--muted);font-weight:400"></span></div>
+            <div class="ns">Evaluated in a fixed order, first refusal wins, ends in default-deny.
+            The only place an <code class="mono">AuthorizedAction</code> can be created.</div>
+            <div class="pillrow" id="rulepills"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lane">
+        <div class="lab"><b>Passes</b>or does not</div>
+        <div class="row">
+          <div class="node" id="n-gateway">
+            <div class="nk">the only route out</div>
+            <div class="nt">Action gateway</div>
+            <div class="ns">Refuses to call anything without an
+            <code class="mono">AuthorizedAction</code>. Constructing one elsewhere raises
+            <code class="mono">PolicyBypassError</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lane">
+        <div class="lab"><b>Reaches</b>only these</div>
+        <div class="row">
+          <div class="node" id="n-rail">
+            <div class="nk">tool · money</div>
+            <div class="nt">Payment rail</div>
+            <div class="ns">Simulated. No real money moves anywhere in this project.</div>
+          </div>
+          <div class="node" id="n-content">
+            <div class="nk">boundary · prose</div>
+            <div class="nt">Content policy</div>
+            <div class="ns">The agent writes the message; this decides whether it may be sent.
+            Same idea as the rulebook, applied to language.</div>
+            <div class="pillrow" id="cpills"></div>
+          </div>
+          <div class="node" id="n-gmail">
+            <div class="nk">tool · Composio MCP</div>
+            <div class="nt">Gmail</div>
+            <div class="ns">Scoped to one action, <code class="mono">GMAIL_SEND_EMAIL</code>.
+            Anything else raises <code class="mono">ToolScopeError</code>. The recipient is
+            checked by the policy engine, not by this tool.</div>
+          </div>
+          <div class="node" id="n-paylink">
+            <div class="nk">tool</div>
+            <div class="nt">Payment link</div>
+            <div class="ns">Issued per case, settled once, idempotent.</div>
+          </div>
+          <div class="node blockedtool" id="n-denied">
+            <div class="nk">not granted</div>
+            <div class="nt">read mail · list contacts · drafts</div>
+            <div class="ns">Present in the Gmail toolkit. Deliberately not given to this agent.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lane">
+        <div class="lab"><b>Is recorded</b>either way</div>
+        <div class="row">
+          <div class="node ledger" id="n-ledger">
+            <div class="nk">evidence</div>
+            <div class="nt">Audit ledger</div>
+            <div class="ns">Append-only, enforced by database triggers. Every proposal, every
+            verdict, every refusal, every execution — including the ones that never happened.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="a"></i> the route your selected action takes</span>
+    <span><i></i> a route it does not take</span>
+    <span><b class="acc"></b> a boundary</span>
+    <span><b class="dash"></b> always available, or never granted</span>
+  </div>
+
+  <div class="detail" id="detail">
+    <div class="none">Pick an action to see which rules can refuse it and what it reaches.</div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <p>Built by <code class="mono">analysis/build_agent_graph.py</code>. The action list comes from the
+  enum, the rules and their order from the policy engine, the tool scope from the notifier's
+  allowlist. The line from an action to a rule is observed, not asserted: every action was put to
+  the engine against every scenario in the dataset, in both configurations, and the rules that
+  refused it were recorded.</p>
+  <p><a href="rulebook.html">Read the rulebook →</a> &nbsp; <a href="index.html#live">Watch it run →</a></p>
+</div></footer>
+
+<script id="console-data" type="application/json">{
+  "actions": [
+    {
+      "action": "RETRY_PAYMENT",
+      "kind": "financial",
+      "says": "charge the instrument again now",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED",
+        "RECOVERY_WINDOW_EXPIRED",
+        "MAX_RETRY_LIMIT",
+        "RISK_TYPE_PRECONDITION",
+        "ACTION_PRECONDITION",
+        "HIGH_VALUE_APPROVAL"
+      ],
+      "reaches": [
+        "rail",
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "SCHEDULE_RETRY",
+      "kind": "financial",
+      "says": "charge it again later",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED",
+        "RECOVERY_WINDOW_EXPIRED",
+        "MAX_RETRY_LIMIT",
+        "RISK_TYPE_PRECONDITION",
+        "ACTION_PRECONDITION"
+      ],
+      "reaches": [
+        "rail",
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "SEND_PAYMENT_REMINDER",
+      "kind": "communication",
+      "says": "tell the customer it is outstanding",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED"
+      ],
+      "reaches": [
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "GENERATE_PAYMENT_LINK",
+      "kind": "communication",
+      "says": "give the customer another way to pay",
+      "always_available": false,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE",
+        "FRAUD_HOLD",
+        "OPT_OUT_COMMUNICATION",
+        "RECIPIENT_NOT_ALLOWLISTED"
+      ],
+      "reaches": [
+        "content",
+        "gmail",
+        "paylink"
+      ]
+    },
+    {
+      "action": "REQUEST_HUMAN_REVIEW",
+      "kind": "valve",
+      "says": "hand the case to a person",
+      "always_available": true,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE"
+      ],
+      "reaches": []
+    },
+    {
+      "action": "STOP_RECOVERY",
+      "kind": "valve",
+      "says": "close the case and stop",
+      "always_available": true,
+      "gated_by": [
+        "UNSUPPORTED_ACTION",
+        "PAYMENT_MISMATCH",
+        "TERMINAL_STATE"
+      ],
+      "reaches": []
+    }
+  ],
+  "rules": [
+    {
+      "rule": "UNSUPPORTED_ACTION",
+      "order": 1
+    },
+    {
+      "rule": "PAYMENT_MISMATCH",
+      "order": 2
+    },
+    {
+      "rule": "TERMINAL_STATE",
+      "order": 3
+    },
+    {
+      "rule": "SAFETY_VALVE",
+      "order": 4
+    },
+    {
+      "rule": "DISPUTE_BLOCK",
+      "order": 5
+    },
+    {
+      "rule": "FRAUD_HOLD",
+      "order": 6
+    },
+    {
+      "rule": "OPT_OUT_COMMUNICATION",
+      "order": 7
+    },
+    {
+      "rule": "RECIPIENT_NOT_ALLOWLISTED",
+      "order": 8
+    },
+    {
+      "rule": "RECOVERY_WINDOW_EXPIRED",
+      "order": 9
+    },
+    {
+      "rule": "MAX_RETRY_LIMIT",
+      "order": 10
+    },
+    {
+      "rule": "RETRY_COOLDOWN",
+      "order": 11
+    },
+    {
+      "rule": "RISK_TYPE_PRECONDITION",
+      "order": 12
+    },
+    {
+      "rule": "ACTION_PRECONDITION",
+      "order": 13
+    },
+    {
+      "rule": "CONTACT_BUDGET",
+      "order": 14
+    },
+    {
+      "rule": "HIGH_VALUE_APPROVAL",
+      "order": 15
+    }
+  ],
+  "content_rules": [
+    "UNAUTHORISED_COMMITMENT",
+    "FABRICATED_AMOUNT",
+    "MISSING_REQUIRED_FACT",
+    "PRESSURE_OR_THREAT",
+    "ASKS_FOR_CREDENTIALS",
+    "LEAKS_INTERNALS",
+    "CONTRADICTS_THE_CASE",
+    "OVERLONG"
+  ],
+  "tool_scope": [
+    "GMAIL_SEND_EMAIL"
+  ],
+  "policy_version": "policy-v2",
+  "fingerprint": "3e70292a481ecc65",
+  "note": "Edges from an action to the rules that gate it are observed: every action was put to the policy engine against every scenario in the dataset, in both the simulated and the live-email configuration, and the rules that refused it were recorded. Nothing here is hand-written except the plain-English gloss."
+}
+</script>
+<script>
+const G = JSON.parse(document.getElementById('console-data').textContent);
+const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
+
+document.getElementById('stamp').innerHTML =
+  [['actions', G.actions.length], ['policy rules', G.rules.length],
+   ['content rules', G.content_rules.length],
+   ['gmail actions granted', G.tool_scope.length],
+   ['fingerprint', G.fingerprint]]
+  .map(([k,v]) => '<div><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
+
+/* the rules, as deep links into the rulebook */
+document.getElementById('rulen').textContent = '· ' + G.rules.length + ' rules';
+document.getElementById('rulepills').innerHTML = G.rules
+  .map(r => '<a class="rp" data-rule="' + r.rule + '" href="rulebook.html#rule-' + r.rule + '">' +
+            r.order + ' ' + r.rule + '</a>').join('');
+document.getElementById('cpills').innerHTML = G.content_rules
+  .map(r => '<span class="rp n">' + r + '</span>').join('');
+
+/* the action nodes */
+const actsBox = document.getElementById('acts');
+G.actions.forEach(a => {
+  const n = el('div','node click' + (a.always_available ? ' valve' : ''));
+  n.id = 'a-' + a.action;
+  n.dataset.action = a.action;
+  n.innerHTML =
+    '<div class="nk">' + (a.always_available ? 'always available' : a.kind) + '</div>' +
+    '<div class="nt">' + a.action + '</div>' +
+    '<div class="ns">' + a.says + '</div>';
+  n.addEventListener('click', () => select(a.action));
+  actsBox.append(n);
+});
+
+/* ---- edges ---------------------------------------------------------------
+   Drawn from the live element boxes rather than hard-coded coordinates, so the
+   picture survives a reflow, a font change or a new action. */
+const svg = document.getElementById('edges');
+const EDGES = [
+  ['n-case','n-agent','base'], ['n-policy','n-gateway','base'],
+  ['n-gateway','n-ledger','base'],
+];
+G.actions.forEach(a => {
+  EDGES.push(['n-agent','a-' + a.action, 'act:' + a.action]);
+  EDGES.push(['a-' + a.action,'n-policy','act:' + a.action]);
+  const map = {rail:'n-rail', content:'n-content', gmail:'n-gmail', paylink:'n-paylink'};
+  a.reaches.forEach(t => EDGES.push(['n-gateway', map[t], 'act:' + a.action]));
+  if(!a.reaches.length) EDGES.push(['n-gateway','n-ledger','act:' + a.action]);
+});
+
+function box(id){
+  const n = document.getElementById(id);
+  if(!n) return null;
+  const p = svg.getBoundingClientRect(), r = n.getBoundingClientRect();
+  return {x: r.left - p.left, y: r.top - p.top, w: r.width, h: r.height};
+}
+function draw(){
+  const p = svg.getBoundingClientRect();
+  svg.setAttribute('viewBox', '0 0 ' + p.width + ' ' + p.height);
+  svg.innerHTML = '';
+  EDGES.forEach(([from, to, tag]) => {
+    const a = box(from), b = box(to);
+    if(!a || !b) return;
+    const x1 = a.x + a.w/2, y1 = a.y + a.h, x2 = b.x + b.w/2, y2 = b.y;
+    const dy = Math.max(14, (y2 - y1) / 2);
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', `M${x1},${y1} C${x1},${y1+dy} ${x2},${y2-dy} ${x2},${y2}`);
+    path.dataset.tag = tag;
+    svg.append(path);
+  });
+  paint();
+}
+
+let picked = null;
+function paint(){
+  const tag = picked ? 'act:' + picked : null;
+  svg.querySelectorAll('path').forEach(p => {
+    p.classList.toggle('hot', !!tag && p.dataset.tag === tag);
+    p.classList.toggle('dim', !!tag && p.dataset.tag !== tag && p.dataset.tag !== 'base');
+  });
+  const a = picked && G.actions.find(x => x.action === picked);
+  const reach = a ? a.reaches.map(t => 'n-' + t) : [];
+  document.querySelectorAll('.node').forEach(n => {
+    if(n.dataset.action){
+      n.classList.toggle('on', n.dataset.action === picked);
+      n.classList.toggle('dim', !!picked && n.dataset.action !== picked);
+      return;
+    }
+    const optional = ['n-rail','n-content','n-gmail','n-paylink'].includes(n.id);
+    n.classList.toggle('dim', !!picked && optional && !reach.includes(n.id));
+    n.classList.toggle('hot', !!picked && reach.includes(n.id));
+  });
+  document.querySelectorAll('#rulepills .rp').forEach(el => {
+    const gated = a && a.gated_by.includes(el.dataset.rule);
+    el.classList.toggle('n', !!picked && !gated);
+    el.style.color = picked && gated ? 'var(--accent)' : '';
+    el.style.borderColor = picked && gated ? 'var(--accent)' : '';
+  });
+}
+
+function select(action){
+  picked = picked === action ? null : action;
+  const a = G.actions.find(x => x.action === picked);
+  const d = document.getElementById('detail');
+  document.getElementById('hint').textContent = picked
+    ? 'Showing ' + picked + '. Click it again to clear.'
+    : 'Click any action below.';
+  if(!a){
+    d.innerHTML = '<div class="none">Pick an action to see which rules can refuse it and what it reaches.</div>';
+    paint(); return;
+  }
+  const TOOL = {rail:'Payment rail (simulated)', content:'Content policy',
+                gmail:'Gmail via Composio — GMAIL_SEND_EMAIL only', paylink:'Payment link'};
+  d.innerHTML =
+    '<h4>' + a.action + '</h4>' +
+    '<p class="say">' + a.says + (a.always_available
+      ? ' — always available, so a case can never be trapped with no legal move.' : '') + '</p>' +
+    '<div class="sub">' + a.gated_by.length + ' rules can refuse it</div>' +
+    '<div class="pillrow">' + a.gated_by.map(r =>
+      '<a class="rp" href="rulebook.html#rule-' + r + '">' + r + '</a>').join('') + '</div>' +
+    '<div class="sub">what it reaches once authorised</div>' +
+    (a.reaches.length
+      ? '<div class="pillrow">' + a.reaches.map(t => '<span class="rp">' + TOOL[t] + '</span>').join('') + '</div>'
+      : '<div class="none">Nothing outside the system. It closes or escalates the case, and the ledger records it.</div>');
+  paint();
+}
+
+document.getElementById('n-policy').addEventListener('click', ev => {
+  if(ev.target.closest('a')) return;
+  location.href = 'rulebook.html';
+});
+
+addEventListener('resize', draw);
+addEventListener('load', draw);
+draw();
+</script>
+</body>
+</html>
