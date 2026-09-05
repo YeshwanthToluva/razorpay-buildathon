@@ -41,6 +41,12 @@ from afin.domain.transitions import consequence
 from afin.policy.authorization import authorize
 from afin.policy.config import DEFAULT_POLICY_CONFIG
 from afin.policy.engine import PolicyRequest
+from afin.observability import trace as tracing
+from afin.observability.instrument import (
+    TracedNotifier,
+    TracedProvider,
+    TracedReasoner,
+)
 from afin.simulator.live_email import LiveEmailProvider, _rupees
 from afin.simulator.razorpay_sim import RazorpaySimulator
 from afin.tools import paylink
@@ -232,6 +238,16 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
         dataset = f"{DATASET_VERSION}:{run_id}"
         load_into(ENGINE, generate(seed=DEFAULT_SEED, version=dataset))
 
+        tracer = tracing.Tracer(
+            run_id=run_id,
+            on_span=lambda sp: queue.put_nowait({
+                "event_type": "SPAN", "span_id": sp.span_id, "parent_id": sp.parent_id,
+                "name": sp.name, "kind": sp.kind, "duration_ms": sp.duration_ms,
+                "payment_id": sp.payment_id, "cycle": sp.cycle,
+                "attributes": sp.attributes, "input": sp.input, "output": sp.output,
+                "error": sp.error,
+            }),
+        )
         reasoner, prompt_version = _build_reasoner(req)
         ledger = AuditLedger(engine=ENGINE, run_id=run_id)
         ledger.open_run(
@@ -293,7 +309,8 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
                 })
 
             provider = LiveEmailProvider(
-                notifier=build_notifier(), run_id=run_id, dataset_version=dataset,
+                notifier=TracedNotifier(build_notifier(), tracer),
+                run_id=run_id, dataset_version=dataset,
                 pay_base_url=PAY_BASE,
                 demo_recipient=customer.email, redirected_from=redirected_from,
                 simulator=RazorpaySimulator(seed=DEFAULT_SEED), on_link=announce,
@@ -302,14 +319,18 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
             provider = RazorpaySimulator(seed=DEFAULT_SEED)
 
         orch = Orchestrator(
-            engine=ENGINE, reasoner=reasoner, provider=provider,
+            engine=ENGINE, reasoner=TracedReasoner(reasoner, tracer),
+            provider=TracedProvider(provider, tracer),
             ledger=ledger, config=cfg, now=EPOCH,
             dataset_version=dataset, observer=observe,
             # One cycle in email mode: the case pauses on the customer, it does
             # not keep messaging them while they decide.
             max_cycles=1 if live else 4,
         )
-        result = await orch.run_case(payment, customer)
+        with tracer.span("run.case", "orchestration", payment_id=payment.id,
+                         scenario=payment.scenario_tag, channel=req.channel):
+            result = await orch.run_case(payment, customer)
+        tracer.save()
         ledger.close_run()
         if live:
             # Hold the stream open while the customer decides.
@@ -354,6 +375,7 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
             "consequence": consequence(
                 payment.risk_type, result.recovered_minor > 0
             ),
+            "trace": tracer.summary(),
         })
         await queue.put(None)
 
@@ -608,3 +630,34 @@ def settle(token: str) -> dict:
         "recovery_state": after.recovery_state.value,
         "receipt_sent": receipt.delivered,
     }
+
+
+@app.get("/api/runs/{run_id}/trace")
+def run_trace(run_id: str) -> dict:
+    """Every call made during a run: model, policy, provider, tool.
+
+    Separate from the audit ledger on purpose. The ledger is evidence about
+    decisions and stays small; this is diagnostic and verbose, and records
+    inputs, outputs and timings for each span.
+    """
+    data = tracing.load(run_id)
+    if data is None:
+        return {"ok": False, "error": f"no trace recorded for {run_id}"}
+    return {"ok": True, **data}
+
+
+@app.get("/api/runs")
+def list_runs(limit: int = 20) -> list[dict]:
+    """Recent live runs, newest first, with whether a trace was captured."""
+    import os as _os
+
+    if not tracing.STORE.exists():
+        return []
+    files = sorted(tracing.STORE.glob("*.json"),
+                   key=lambda f: f.stat().st_mtime, reverse=True)[:limit]
+    out = []
+    for f in files:
+        data = tracing.load(f.stem) or {}
+        out.append({"run_id": f.stem, "summary": data.get("summary", {}),
+                    "recorded_at": _os.path.getmtime(f)})
+    return out

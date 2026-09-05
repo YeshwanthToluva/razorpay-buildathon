@@ -701,6 +701,32 @@ body::before{
   font-weight:600;padding:8px 15px;border-radius:var(--radius);text-decoration:none;
   border:1px solid var(--good);background:var(--good);color:var(--surface)}
 .paybtn:hover{filter:brightness(1.08)}
+.lvtrace{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+  padding:12px 14px}
+.lvtrace .th{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);
+  font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:9px}
+.spans{display:grid;gap:4px;max-height:230px;overflow-y:auto}
+.spans .empty{font-size:11.5px;color:var(--muted)}
+details.sp{border:1px solid var(--line-soft);border-left:2px solid var(--line);border-radius:3px;
+  background:var(--surface-2)}
+details.sp summary{list-style:none;cursor:pointer;padding:6px 9px;display:flex;
+  justify-content:space-between;gap:8px;align-items:baseline;font-family:var(--mono);font-size:11px}
+details.sp summary::-webkit-details-marker{display:none}
+details.sp summary:hover{background:var(--surface)}
+details.sp .nm{font-weight:600;overflow-wrap:anywhere}
+details.sp .ms{color:var(--muted);white-space:nowrap}
+details.sp.model{border-left-color:var(--accent)}
+details.sp.tool{border-left-color:var(--good)}
+details.sp.provider{border-left-color:var(--warn)}
+details.sp.orchestration{border-left-color:var(--muted)}
+details.sp.err{border-left-color:var(--crit)}
+.spbody{padding:2px 9px 9px;font-family:var(--mono);font-size:10.5px;display:grid;gap:2px}
+.spbody .lbl{color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:9px;
+  margin-top:5px}
+.spbody .kv{display:flex;gap:7px}
+.spbody .kv b{font-weight:500;color:var(--muted);min-width:104px;flex-shrink:0}
+.spbody .kv span{color:var(--ink-2);overflow-wrap:anywhere}
 .modenote{border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:var(--radius);
   background:var(--surface);padding:11px 15px;margin-bottom:14px;font-size:13px;color:var(--ink-2)}
 .modenote b{color:var(--ink)}
@@ -805,6 +831,13 @@ footer code{font-family:var(--mono)}
       Stages appear here as they happen.</div>
     </div>
     <aside class="lvside">
+      <div class="lvtrace">
+        <div class="th">
+          <span>Execution trace</span>
+          <span id="lvtracesum">—</span>
+        </div>
+        <div class="spans" id="lvspans"></div>
+      </div>
       <div class="lvmeter">
         <div class="k" id="lvrisklab">At risk</div><div class="v" id="lvrisk">—</div>
         <div class="k" style="margin-top:12px">Recovered</div>
@@ -1693,6 +1726,10 @@ async function runLive(){
   document.getElementById('lvbar').style.width = '0%';
   document.getElementById('lvunsafe').textContent = '0';
   lvFacts([]);
+  spanCount = 0; spanMs = 0;
+  document.getElementById('lvspans').innerHTML =
+    '<div class="empty">Model, policy, provider and tool calls appear here as they run.</div>';
+  document.getElementById('lvtracesum').textContent = '—';
   let atRisk = 0;
   lvCategory = null; lvAttempt = 0;
 
@@ -1821,6 +1858,8 @@ async function runLive(){
           document.getElementById('lvrec').textContent = rupee(got);
           document.getElementById('lvbar').style.width =
             Math.min(100, got / atRisk * 100) + '%';
+        } else if(t === 'SPAN'){
+          renderSpan(e);
         } else if(t === 'PROPOSAL_INVALID'){
           lvAdd('err','proposal rejected','malformed proposal', e.error || '');
         } else if(t === 'RUN_COMPLETE'){
@@ -1851,6 +1890,32 @@ async function runLive(){
   }finally{
     lvBusy = false; lvRunBtn.disabled = false; lvRunBtn.textContent = 'Detect & recover';
   }
+}
+
+let spanCount = 0, spanMs = 0;
+function renderSpan(e){
+  const box = document.getElementById('lvspans');
+  if(!spanCount) box.innerHTML = '';
+  spanCount += 1; spanMs += (e.duration_ms || 0);
+  document.getElementById('lvtracesum').textContent =
+    spanCount + ' spans · ' + spanMs.toFixed(0) + 'ms';
+  const d = el('details','sp ' + e.kind + (e.error ? ' err' : ''));
+  d.innerHTML = '<summary><span class="nm">' + e.name + '</span>' +
+    '<span class="ms">' + (e.duration_ms ?? 0).toFixed(1) + 'ms</span></summary>';
+  const body = el('div','spbody');
+  const rows = (label, obj) => {
+    if(!obj || !Object.keys(obj).length) return;
+    body.append(el('div','lbl', label));
+    Object.entries(obj).forEach(([k,v]) => body.append(
+      el('div','kv','<b>'+k+'</b><span>'+String(v).replace(/</g,'&lt;').slice(0,600)+'</span>')));
+  };
+  rows('attributes', e.attributes);
+  rows('input', e.input);
+  rows('output', e.output);
+  if(e.error) rows('error', {error: e.error});
+  d.append(body);
+  box.append(d);
+  box.scrollTop = box.scrollHeight;
 }
 
 function describeMode(){
