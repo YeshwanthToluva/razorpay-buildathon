@@ -26,6 +26,7 @@ from afin.domain.enums import (
     ExecutionResult,
     PaymentState,
     RecoveryState,
+    RiskType,
 )
 from afin.domain.models import PaymentSnapshot, ProviderOutcome
 
@@ -102,3 +103,38 @@ def exhaust(payment: PaymentSnapshot, reason: str) -> PaymentSnapshot:
         payment_state=PaymentState.WRITTEN_OFF,
         recovery_state=RecoveryState.STOPPED,
     )
+
+
+#: What it actually means for the business when a case closes without the money.
+#: Kept in the domain rather than the UI because it is a statement about the
+#: obligation, not about presentation: an abandoned checkout leaves no debt, an
+#: unpaid subscription leaves service running that is not being paid for, and a
+#: delivered invoice leaves a genuine receivable to write off or pursue.
+CONSEQUENCE_UNRECOVERED: dict[RiskType, str] = {
+    RiskType.PAYMENT_FAILURE: (
+        "The subscription is live but unpaid. Nothing further is owed to us "
+        "automatically, so the service now has to be suspended or downgraded — "
+        "otherwise we keep delivering it for free."
+    ),
+    RiskType.CHECKOUT_ABANDONMENT: (
+        "No sale was made. Nothing was delivered and nothing is owed by either "
+        "side, so the customer simply does not get the product. This is lost "
+        "pipeline, not an unpaid debt."
+    ),
+    RiskType.OVERDUE_RECEIVABLE: (
+        "The goods or services were already delivered and remain unpaid, so this "
+        "is a genuine receivable. It goes to write-off or to collections."
+    ),
+}
+
+CONSEQUENCE_RECOVERED: dict[RiskType, str] = {
+    RiskType.PAYMENT_FAILURE: "The subscription is paid and stays active.",
+    RiskType.CHECKOUT_ABANDONMENT: "The sale completed and the product is delivered.",
+    RiskType.OVERDUE_RECEIVABLE: "The invoice is settled and clears from receivables.",
+}
+
+
+def consequence(risk_type: RiskType, recovered: bool) -> str:
+    """What happens next, in business terms, once a case is closed."""
+    table = CONSEQUENCE_RECOVERED if recovered else CONSEQUENCE_UNRECOVERED
+    return table.get(risk_type, "")

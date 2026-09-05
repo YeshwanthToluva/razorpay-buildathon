@@ -34,8 +34,9 @@ from afin.audit.ledger import AuditLedger
 from afin.db.engine import create_schema, get_engine
 from afin.db.repository import load_cases
 from afin.db.seed import DATASET_VERSION, DEFAULT_SEED, EPOCH, SCENARIOS, generate, load_into
-from afin.domain.enums import ActionType, Channel
+from afin.domain.enums import ActionType, Channel, OWED_RISKS
 from afin.domain.models import ProposedAction
+from afin.domain.transitions import consequence
 from afin.policy.authorization import authorize
 from afin.policy.config import DEFAULT_POLICY_CONFIG
 from afin.policy.engine import PolicyRequest
@@ -153,6 +154,8 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
             "event_type": "RISK_DETECTED", "payment_id": payment.id,
             "scenario": payment.scenario_tag, "amount_minor": payment.amount_minor,
             "failure_category": payment.failure_category.value,
+            "risk_type": payment.risk_type.value,
+            "is_owed": payment.risk_type in OWED_RISKS,
             "retry_count": payment.retry_count, "is_disputed": payment.is_disputed,
             "opted_out": customer.opted_out,
             "prior_successful_payments": customer.prior_successful_payments,
@@ -174,6 +177,11 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
             "final_recovery_state": result.payment.recovery_state.value,
             "proposals": result.proposals, "denied": result.denied,
             "executed": result.executed, "unsafe_executed": result.unsafe_executed,
+            "risk_type": payment.risk_type.value,
+            "is_owed": payment.risk_type in OWED_RISKS,
+            "consequence": consequence(
+                payment.risk_type, result.recovered_minor > 0
+            ),
         })
         await queue.put(None)
 

@@ -16,7 +16,13 @@ from sqlalchemy import Engine, func, select
 
 from afin.audit.ledger import EventType
 from afin.db.schema import audit_events, payment_attempts, payments
-from afin.domain.enums import Decision, PaymentState, RecoveryState
+from afin.domain.enums import (
+    Decision,
+    OWED_RISKS,
+    PaymentState,
+    RecoveryState,
+    RiskType,
+)
 
 #: Rules whose denial means the agent asked for something it should not have.
 #: A cooldown or budget denial is pacing; these are safety refusals.
@@ -40,6 +46,13 @@ class RunMetrics:
     run_id: str
     payments_processed: int = 0
     revenue_at_risk_minor: int = 0
+    # Owed vs prospective are different money and must not be summed as one
+    # figure: an abandoned checkout is a lost sale, not an unpaid debt.
+    owed_at_risk_minor: int = 0
+    owed_recovered_minor: int = 0
+    prospective_at_risk_minor: int = 0
+    prospective_recovered_minor: int = 0
+    by_risk_type: dict[str, dict] = field(default_factory=dict)
     revenue_recovered_minor: int = 0
     recovery_rate: float = 0.0
     payment_recovery_rate: float = 0.0
@@ -100,6 +113,25 @@ def compute(engine: Engine, run_id: str, dataset_version: str) -> RunMetrics:
     m.payments_recovered = sum(
         1 for r in rows if r["payment_state"] == PaymentState.RECOVERED.value
     )
+
+    for r in rows:
+        rt = r.get("risk_type") or RiskType.PAYMENT_FAILURE.value
+        b = m.by_risk_type.setdefault(
+            rt, {"payments": 0, "at_risk_minor": 0, "recovered_minor": 0,
+                 "recovery_rate": 0.0, "is_owed": rt in {x.value for x in OWED_RISKS}}
+        )
+        b["payments"] += 1
+        b["at_risk_minor"] += r["amount_minor"]
+        b["recovered_minor"] += r["recovered_amount_minor"]
+        if rt in {x.value for x in OWED_RISKS}:
+            m.owed_at_risk_minor += r["amount_minor"]
+            m.owed_recovered_minor += r["recovered_amount_minor"]
+        else:
+            m.prospective_at_risk_minor += r["amount_minor"]
+            m.prospective_recovered_minor += r["recovered_amount_minor"]
+    for b in m.by_risk_type.values():
+        if b["at_risk_minor"]:
+            b["recovery_rate"] = b["recovered_minor"] / b["at_risk_minor"]
     m.escalations = sum(
         1 for r in rows if r["recovery_state"] == RecoveryState.ESCALATED.value
     )

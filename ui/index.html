@@ -790,7 +790,7 @@ footer code{font-family:var(--mono)}
     </div>
     <aside class="lvside">
       <div class="lvmeter">
-        <div class="k">At risk</div><div class="v" id="lvrisk">—</div>
+        <div class="k" id="lvrisklab">At risk</div><div class="v" id="lvrisk">—</div>
         <div class="k" style="margin-top:12px">Recovered</div>
         <div class="v good" id="lvrec">—</div>
         <div class="lvtrack"><i id="lvbar"></i></div>
@@ -1721,7 +1721,12 @@ async function runLive(){
           }[e.failure_category] || e.failure_category;
           lvAdd('detect','1 · revenue at risk detected',
             rupee(e.amount_minor) + ' at risk on ' + e.payment_id,
-            'We could not collect it because ' + why + '.');
+            'We could not collect it because ' + why + '.' +
+            (e.is_owed
+              ? ' This money is <strong>already owed</strong> — something was delivered.'
+              : ' Nothing was delivered and nothing is owed yet: this is a <strong>sale that has not happened</strong>.'));
+          document.getElementById('lvrisklab').textContent =
+            e.is_owed ? 'Owed to us' : 'Potential sale';
           lvFacts([
             ['payment', e.payment_id],
             ['risk', e.failure_category],
@@ -1775,6 +1780,10 @@ async function runLive(){
                 ' and the case ended as ' + e.final_recovery_state.toLowerCase() + '.') +
             ' The rulebook refused ' + e.denied + ' of its ' + e.proposals +
             ' proposals, and ' + e.unsafe_executed + ' unsafe actions reached the provider.');
+          if(e.consequence){
+            lvAdd(got ? 'done' : 'done zero', 'what happens next',
+              got ? 'Settled' : 'Not collected', e.consequence);
+          }
           document.getElementById('lvunsafe').textContent = e.unsafe_executed;
         } else if(t === 'ERROR'){
           lvAdd('err','error', e.error || 'unknown', '');
