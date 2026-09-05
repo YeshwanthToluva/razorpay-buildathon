@@ -15,6 +15,7 @@ as it happens. Two endpoints matter:
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import json
 import os
 import sys
@@ -35,7 +36,7 @@ from afin.audit.ledger import AuditLedger
 from afin.db.engine import create_schema, get_engine
 from afin.db.repository import load_cases
 from afin.db.seed import DATASET_VERSION, DEFAULT_SEED, EPOCH, SCENARIOS, generate, load_into
-from afin.domain.enums import ActionType, Channel, OWED_RISKS
+from afin.domain.enums import ActionType, OWED_RISKS
 from afin.domain.models import ProposedAction
 from afin.domain.transitions import consequence
 from afin.policy.authorization import authorize
@@ -308,12 +309,67 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
                     "amount_minor": link.amount_minor,
                 })
 
+            def announce_content(msg, pay):
+                # The content boundary is a policy decision, so it belongs in
+                # the trace next to the action policy, not only in the stream.
+                with tracer.span(
+                    "policy.content", "policy", payment_id=pay.id,
+                    rule=msg.content_rule, authored_by=msg.authored_by,
+                ) as sp:
+                    sp.input = {"subject": msg.subject,
+                                "body": list(msg.paragraphs),
+                                "refused_draft": msg.refused_text}
+                    sp.output = {"allowed": msg.authored_by == "agent",
+                                 "rule": msg.content_rule,
+                                 "reason": msg.content_reason}
+                queue.put_nowait({
+                    "event_type": "MESSAGE_COMPOSED", "payment_id": pay.id,
+                    "authored_by": msg.authored_by,
+                    "content_rule": msg.content_rule,
+                    "content_reason": msg.content_reason,
+                    "subject": msg.subject,
+                    "paragraphs": list(msg.paragraphs),
+                    "refused_text": msg.refused_text,
+                })
+
+            def compose_sync(pay, action):
+                """Let the agent write this one, on a loop of its own.
+
+                The provider is synchronous and this loop is already running, so
+                the model call goes to a worker thread rather than deadlocking
+                on the loop that is waiting for it. Returning None keeps the
+                deterministic template, which is what a rule-based reasoner and
+                any composer failure both do.
+                """
+                composer = getattr(reasoner, "compose", None)
+                if composer is None:
+                    return None
+                with tracer.span(
+                    "agent.compose", "model", payment_id=pay.id,
+                    reasoner=reasoner.name, model=reasoner.model,
+                ) as sp:
+                    sp.input = {"action": action.value,
+                                "risk_type": pay.risk_type.value,
+                                "failure_category": pay.failure_category.value,
+                                "amount_minor": pay.amount_minor,
+                                "invoice_id": pay.invoice_id,
+                                "segment": customer.segment,
+                                "prior_successful_payments":
+                                    customer.prior_successful_payments}
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                        draft = pool.submit(
+                            lambda: asyncio.run(composer(pay, customer, action))
+                        ).result()
+                    sp.output = draft.model_dump() if draft is not None else {"draft": None}
+                    return draft
+
             provider = LiveEmailProvider(
                 notifier=TracedNotifier(build_notifier(), tracer),
                 run_id=run_id, dataset_version=dataset,
                 pay_base_url=PAY_BASE,
                 demo_recipient=customer.email, redirected_from=redirected_from,
                 simulator=RazorpaySimulator(seed=DEFAULT_SEED), on_link=announce,
+                composer=compose_sync, on_content=announce_content,
             )
         else:
             provider = RazorpaySimulator(seed=DEFAULT_SEED)
@@ -425,11 +481,6 @@ def evaluate_action(probe: PolicyProbe) -> dict:
 
     payment = _to_payment(type("R", (), row)())
     customer = _to_customer(type("R", (), cust)())
-
-    try:
-        channel = Channel(probe.action) if False else None
-    except ValueError:
-        channel = None
 
     proposal = ProposedAction(
         action=probe.action.strip(),
@@ -607,6 +658,22 @@ def settle(token: str) -> dict:
         resulting_payment_state=after.payment_state.value,
         resulting_recovery_state=after.recovery_state.value,
     )
+
+    # A receipt is not a recovery action -- the customer caused this event and
+    # is being told what happened to their own money. It still may not reach an
+    # address the policy engine would refuse, so the allowlist is consulted here
+    # rather than trusted to the mail tool, which is the same rule the engine
+    # applies as RECIPIENT_NOT_ALLOWLISTED.
+    allowed = (link.recipient or "").strip().lower() in DEFAULT_POLICY_CONFIG.email_allowlist
+    if not allowed:
+        return {
+            "ok": True, "already_settled": False,
+            "recovered": _rupees(link.amount_minor),
+            "payment_state": after.payment_state.value,
+            "recovery_state": after.recovery_state.value,
+            "receipt_sent": False,
+            "receipt_blocked": "RECIPIENT_NOT_ALLOWLISTED",
+        }
 
     receipt = build_notifier().send(Message(
         to=link.recipient,

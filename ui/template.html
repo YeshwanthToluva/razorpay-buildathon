@@ -681,6 +681,17 @@ body::before{
 .lvverdict.ALLOW{color:var(--good);border-color:var(--good);background:var(--good-soft)}
 .lvverdict.DENY{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
 .lvverdict.REQUIRE_APPROVAL{color:var(--accent-ink);border-color:var(--accent);background:var(--accent-soft)}
+/* The message as the customer would see it, and — when the content policy
+   refused it — the draft that never left. */
+.msgbox{margin-top:10px;border:1px solid var(--line);border-radius:6px;padding:12px 14px;
+  background:var(--surface);font-size:12.5px;line-height:1.6}
+.msgbox p{margin:0 0 8px}
+.msgbox p:last-child{margin-bottom:0}
+.msgsub{font-weight:600;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.msgbox.refused{border-color:var(--warn);background:var(--warn-soft);
+  text-decoration:line-through;text-decoration-color:var(--warn);opacity:.85}
+.msglab{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--warn);margin-bottom:8px;text-decoration:none;display:block}
 
 .lvside{display:grid;gap:12px}
 .lvmeter,.lvfacts,.lvinv{border:1px solid var(--line);border-radius:var(--radius);
@@ -987,7 +998,8 @@ footer code{font-family:var(--mono)}
     </div>
     <div>
       <p><strong id="attemptedTotal" class="mono"></strong> of the refused actions broke a safety rule —
-      a dispute, a fraud signal, an opt-out, a closed recovery window, a spent retry budget — and
+      a fraud signal, a closed recovery window, a spent retry budget, a contact budget already
+      used up, an amount too large to move without a human — and
       <strong id="blockedTotal" class="mono"></strong> were prevented. <strong>100% prevented by
       deterministic authorization.</strong> The zero is not the agent declining to try; it is the
       boundary holding while the agent tried.</p>
@@ -1038,7 +1050,7 @@ python analysis/build_console_data.py &amp;&amp; python analysis/build_ui.py</pr
   <code>data/runs/*.json</code> — never from the database, so every figure here is reproducible from the
   repository alone. Regenerate with <code>python analysis/build_console_data.py</code>.</p>
   <p>Synthetic data only. No real customer, payment or communication data appears in this project.
-  288 tests · 19 adversarial · 147 policy.</p>
+  375 tests · 19 adversarial · 208 policy.</p>
 </div></footer>
 
 <script id="console-data" type="application/json">__CONSOLE_DATA__</script>
@@ -1365,14 +1377,18 @@ buildFilter(); buildPresets(); renderRunMeta();
 selected = 'pay_0033'; renderList(); renderChain();
 
 /* ---- safety ---- */
-const attempted = D.arms.reduce((s,a) => s + (a.metrics.policy_violations_attempted||0), 0);
-const prevented = D.arms.reduce((s,a) => s + (a.metrics.policy_violations_prevented||0), 0);
+/* Agent arms only. A deterministic baseline cannot propose an unsafe action in
+   the first place, so counting its refusals here would inflate the number that
+   is supposed to describe what the agent tried. */
+const AGENT_ARMS = D.arms.filter(a => !a.is_baseline);
+const attempted = AGENT_ARMS.reduce((s,a) => s + (a.metrics.policy_violations_attempted||0), 0);
+const prevented = AGENT_ARMS.reduce((s,a) => s + (a.metrics.policy_violations_prevented||0), 0);
 document.getElementById('unsafeTotal').textContent =
-  D.arms.reduce((s,a) => s + (a.metrics.unsafe_actions_executed||0), 0);
+  AGENT_ARMS.reduce((s,a) => s + (a.metrics.unsafe_actions_executed||0), 0);
 document.getElementById('attemptedTotal').textContent = attempted;
 document.getElementById('blockedTotal').textContent = prevented;
 document.getElementById('safetytag').textContent =
-  BLOCKED_TOTAL + ' denied · ' + D.arms.reduce((s,a)=>s+(a.metrics.approvals_required||0),0) +
+  BLOCKED_TOTAL + ' denied · ' + AGENT_ARMS.reduce((s,a)=>s+(a.metrics.approvals_required||0),0) +
   ' held for approval · 0 executed';
 
 /* per-arm attack bar: dangerous proposals rise with autonomy, none get through */
@@ -1502,7 +1518,7 @@ async function showBlocked(h){
 const hev = el('div',''); hev.style.marginTop = '12px';
 hev.append(evidence([
   ['suite','tests/adversarial/test_hostile_reasoner.py · 19 tests'],
-  ['policy suite','tests/policy/ · 147 tests'],
+  ['policy suite','tests/policy/ · 208 tests'],
   ['real-run refusals','data/adversarial/blocked_actions.csv'],
   ['invariant','executed_without_policy_allow = 0']
 ]));
@@ -1795,10 +1811,36 @@ async function runLive(){
             (ok ? 'Nothing in the rulebook forbids this, so it may run. '
                 : 'The rulebook refused it, so it never reaches the provider. ') +
             (e.policy_reason || ''));
+        } else if(t === 'MESSAGE_COMPOSED'){
+          const wrote = e.authored_by === 'agent';
+          const esc = x => String(x == null ? '' : x)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          const shown = '<div class="msgbox"><div class="msgsub">' + esc(e.subject) +
+            '</div>' + (e.paragraphs||[]).map(x => '<p>' + esc(x) + '</p>').join('') +
+            '</div>';
+          const refused = e.refused_text
+            ? '<div class="msgbox refused"><div class="msglab">what the agent wrote — '
+              + 'refused, never sent</div>' +
+              esc(e.refused_text).split('\n').map(x => '<p>' + x + '</p>').join('') +
+              '</div>'
+            : '';
+          lvAdd('policy ' + (wrote ? 'ok' : ''), '4 · the agent writes the message',
+            (wrote
+              ? '<span class="lvverdict ALLOW">AGENT-WRITTEN</span>'
+              : '<span class="lvverdict DENY">TEMPLATE USED</span>') +
+            ' <span style="font-weight:400;font-size:11px;color:var(--muted)">rule: ' +
+            e.content_rule + '</span>',
+            (wrote
+              ? 'The agent wrote this for this specific case, and every word passed the '
+                + 'content policy — a second deterministic boundary that checks the prose '
+                + 'the way the rulebook checks the action.'
+              : 'The content policy refused what the agent wrote, so the deterministic '
+                + 'template went out instead. ' + (e.content_reason || '')) +
+            refused + shown);
         } else if(t === 'ACTION_EXECUTED'){
           const got = e.revenue_recovered_minor || 0;
           lvAttempt += 1;
-          lvAdd('exec ' + (got ? 'win' : ''), '4 · what actually happened',
+          lvAdd('exec ' + (got ? 'win' : ''), '6 · what actually happened',
             got ? 'Collected ' + rupee(got) : 'Still unpaid',
             sayOutcome(e.executed_action, lvCategory, got, lvAttempt),
             'attempt ' + lvAttempt);
@@ -1822,7 +1864,7 @@ async function runLive(){
           a.textContent = 'Open the payment page →';
           box.append(a);
         } else if(t === 'AWAITING_CUSTOMER'){
-          const box = lvAdd('policy','6 · waiting on the customer',
+          const box = lvAdd('policy','7 · waiting on the customer',
             'Nothing more the agent can do',
             'The case is parked. It is not retrying, not messaging again, and not ' +
             'guessing whether you paid — it waits until the money actually arrives.');
@@ -1832,7 +1874,7 @@ async function runLive(){
           box.append(a);
         } else if(t === 'PAYMENT_RECEIVED'){
           const got = e.revenue_recovered_minor || 0;
-          lvAdd('exec win','7 · payment received',
+          lvAdd('exec win','8 · payment received',
             'Collected ' + rupee(got),
             'You paid the link. The agent observed it, closed the case, and a receipt ' +
             'is on its way from the same agent.');

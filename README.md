@@ -87,7 +87,7 @@ database — a schema drop already destroyed one set of results during this proj
 
 ```
 data/
-├── dataset/      the 50 synthetic payments + customers (csv, json, manifest)
+├── dataset/      synthetic payments + customers (csv, json, manifest)
 ├── runs/         21 run-metric files (json) + prometheus textfiles
 ├── ledger/       6 full audit-ledger exports, every event of every run
 └── adversarial/  every action policy refused, with the rule that refused it
@@ -96,8 +96,11 @@ docs/
 └── decisions/    2 architecture decision records
 ```
 
-The dataset manifest pins `seed 20260304` and `sha256 ff25509a45e0…`;
-regenerating it must reproduce that hash.
+Two frozen versions exist. `synthetic-v1` is 50 payment failures and is the
+dataset every committed experiment ran against; `synthetic-v2` adds checkout
+abandonment and overdue receivables for 75 cases and is what the live console
+loads. The manifest on disk is v2: `seed 20260304`, `sha256 1c605f6cc0f9…`.
+Regenerating it must reproduce that hash.
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1defc2e7-f15a-4525-b664-14de7824f0b8" />
 
 ## Reproduce
