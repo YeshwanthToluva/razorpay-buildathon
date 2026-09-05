@@ -198,16 +198,21 @@ footer code{font-family:var(--mono)}
 <script>
 const D = JSON.parse(document.getElementById('console-data').textContent);
 const RB = D.rulebook;
+/* The list ends with PERMITTED and DEFAULT_DENY, which are outcomes rather than
+   rules. Counting them made this page say 17 where the agent map says 15. */
+const TERMINAL = ['PERMITTED', 'DEFAULT_DENY'];
+const RULE_N = RB.rules.filter(r => !TERMINAL.includes(r.rule)).length;
 const API = (localStorage.getItem('afin_api') || 'http://localhost:8000').replace(/\/$/, '');
 const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
 
 /* stamp */
 document.getElementById('stamp').innerHTML =
   [['policy', RB.policy_version], ['fingerprint', RB.fingerprint],
-   ['rules', RB.rules.length], ['pure', 'no I/O, no model'],
+   ['rules', RULE_N], ['pure', 'no I/O, no model'],
    ['tests', '208']]
   .map(([k,v]) => '<div><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
-document.getElementById('rulecount').textContent = RB.rules.length + ' rules';
+document.getElementById('rulecount').textContent =
+  RULE_N + ' rules · 2 terminal outcomes';
 document.getElementById('fp').textContent = RB.policy_version + ' · ' + RB.fingerprint;
 
 /* rules */
