@@ -701,6 +701,10 @@ body::before{
   font-weight:600;padding:8px 15px;border-radius:var(--radius);text-decoration:none;
   border:1px solid var(--good);background:var(--good);color:var(--surface)}
 .paybtn:hover{filter:brightness(1.08)}
+.modenote{border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:var(--radius);
+  background:var(--surface);padding:11px 15px;margin-bottom:14px;font-size:13px;color:var(--ink-2)}
+.modenote b{color:var(--ink)}
+.modenote.sim{border-left-color:var(--muted)}
 
 footer{padding:34px 0 60px;color:var(--muted);font-size:12.5px}
 footer p{max-width:80ch;margin:0 0 8px}
@@ -781,8 +785,8 @@ footer code{font-family:var(--mono)}
     <select id="lvscenario"></select>
     <label class="ctl" for="lvchannel">Channel</label>
     <select id="lvchannel">
-      <option value="simulated">Simulated customer</option>
-      <option value="email">Real email → you</option>
+      <option value="email">Real email — you get it, you pay it</option>
+      <option value="simulated">Simulated customer — no email sent</option>
     </select>
     <label class="ctl" for="lvreasoner">Agent</label>
     <select id="lvreasoner">
@@ -792,6 +796,8 @@ footer code{font-family:var(--mono)}
     <button id="lvrun" class="runbtn">Detect &amp; recover</button>
     <span class="apistate" id="lvstate">checking API…</span>
   </div>
+
+  <div class="modenote" id="lvmode"></div>
 
   <div class="livegrid">
     <div class="lvstream" id="lvstream">
@@ -1585,11 +1591,12 @@ const SAY_OUTCOME = {
     'The later attempt went through. Money collected.',
     'The later attempt was declined too.'],
   GENERATE_PAYMENT_LINK: [
-    'The customer opened the link and paid with a different method.',
-    'The link was delivered, but the customer has not paid it.'],
+    'The simulated customer paid with a different method. (No email was sent — ' +
+      'switch the channel to Real email to actually deliver one.)',
+    'The simulated customer did not pay. (No email was sent in this mode.)'],
   SEND_PAYMENT_REMINDER: [
-    'The reminder worked — the customer paid.',
-    'The reminder was delivered, but the customer has not paid yet.'],
+    'The simulated customer paid after the reminder. (No email was sent in this mode.)',
+    'The simulated customer has not paid. (No email was sent in this mode.)'],
   REQUEST_HUMAN_REVIEW: ['Queued for a person to look at.', 'Queued for a person to look at.'],
   STOP_RECOVERY: ['Case closed. No further attempts.', 'Case closed. No further attempts.'],
 };
@@ -1845,6 +1852,22 @@ async function runLive(){
     lvBusy = false; lvRunBtn.disabled = false; lvRunBtn.textContent = 'Detect & recover';
   }
 }
+
+function describeMode(){
+  const real = document.getElementById('lvchannel').value === 'email';
+  const n = document.getElementById('lvmode');
+  n.className = 'modenote' + (real ? '' : ' sim');
+  n.innerHTML = real
+    ? '<b>A real email will be sent to you.</b> The agent decides to contact the customer, ' +
+      'the policy engine checks the recipient against the allowlist before anything is sent, ' +
+      'and then the case waits — it will not claim the money came back until you actually ' +
+      'click Pay on the link.'
+    : '<b>No email is sent in this mode.</b> The simulator decides whether a contacted ' +
+      'customer would have paid, drawn from published per-category odds. Good for watching ' +
+      'the decision loop quickly; it proves nothing about real delivery.';
+}
+document.getElementById('lvchannel').addEventListener('change', describeMode);
+describeMode();
 
 lvRunBtn.addEventListener('click', runLive);
 let MECH = null;
