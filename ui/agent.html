@@ -62,7 +62,16 @@ a{color:var(--accent-ink)}
 
 </style>
 <style>
-.mapwrap{position:relative;padding:26px 0 10px}
+/* This page is the picture. The header earns two lines and then gets out of
+   the way -- the counts that used to sit here in an unstyled block are in the
+   footer, where they belong. */
+header.rb{padding:26px 0 18px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:9px}
+header.rb h1{font-size:clamp(23px,2.7vw,31px);line-height:1.15;max-width:26ch;margin:0}
+header.rb .sub{color:var(--ink-2);max-width:78ch;margin-top:10px;font-size:14px;line-height:1.55}
+
+.mapwrap{position:relative;padding:14px 0 10px}
 #edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 #edges path{fill:none;stroke:var(--line);stroke-width:1.4;transition:stroke .18s,stroke-width .18s,opacity .18s}
 #edges path.hot{stroke:var(--accent);stroke-width:2.2}
@@ -139,11 +148,9 @@ a.rp:hover{color:var(--accent);border-color:var(--accent)}
 <header class="rb"><div class="wrap">
   <div class="eyebrow">What the agent is, drawn from the code</div>
   <h1>Everything the agent can do, and everything standing in its way.</h1>
-  <p class="sub">The model sits at the top. Nothing below it will act on the model's say-so.
-  Each action it may propose is a node; under each one are the rules that can refuse it, and the
-  tools it reaches if none of them do. Click an action to trace its route — click any rule to read
-  it in the rulebook.</p>
-  <div class="stamp" id="stamp"></div>
+  <p class="sub">The model sits at the top and nothing below it acts on the model's say-so.
+  <b>Click any action to trace its route</b> — the rules that can refuse it light up, and every
+  rule opens in the rulebook.</p>
 </div></header>
 
 <section id="map"><div class="wrap">
@@ -277,6 +284,7 @@ a.rp:hover{color:var(--accent);border-color:var(--accent)}
   allowlist. The line from an action to a rule is observed, not asserted: every action was put to
   the engine against every scenario in the dataset, in both configurations, and the rules that
   refused it were recorded.</p>
+  <p id="counts" class="mono"></p>
   <p><a href="rulebook.html">Read the rulebook →</a> &nbsp; <a href="index.html#live">Watch it run →</a></p>
 </div></footer>
 
@@ -478,12 +486,11 @@ a.rp:hover{color:var(--accent);border-color:var(--accent)}
 const G = JSON.parse(document.getElementById('console-data').textContent);
 const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
 
-document.getElementById('stamp').innerHTML =
-  [['actions', G.actions.length], ['policy rules', G.rules.length],
-   ['content rules', G.content_rules.length],
-   ['gmail actions granted', G.tool_scope.length],
-   ['fingerprint', G.fingerprint]]
-  .map(([k,v]) => '<div><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
+document.getElementById('counts').textContent =
+  [G.actions.length + ' actions', G.rules.length + ' policy rules',
+   G.content_rules.length + ' content rules',
+   G.tool_scope.length + ' Gmail action granted',
+   G.policy_version, G.fingerprint].join('  ·  ');
 
 /* the rules, as deep links into the rulebook */
 document.getElementById('rulen').textContent = '· ' + G.rules.length + ' rules';
