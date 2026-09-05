@@ -68,6 +68,34 @@ def health() -> dict:
             "fingerprint": DEFAULT_POLICY_CONFIG.fingerprint()}
 
 
+@app.get("/api/mechanics")
+def mechanics() -> dict:
+    """The simulator's published odds, so no outcome in the demo looks arbitrary.
+
+    Every execution is an independent draw against these numbers, keyed on
+    (seed, payment_id, action, attempt) -- which is why the same action can be
+    unpaid on one attempt and paid on the next without anything else changing.
+    """
+    from afin.simulator.razorpay_sim import (
+        _LINK_SUCCESS, _REMINDER_BY_RISK, _REMINDER_SUCCESS, _RETRY_SUCCESS,
+        _SCHEDULE_BONUS,
+    )
+
+    return {
+        "RETRY_PAYMENT": {k.value: v for k, v in _RETRY_SUCCESS.items()},
+        "SCHEDULE_RETRY": {
+            k.value: min(v + _SCHEDULE_BONUS.get(k, 0.0), 1.0)
+            for k, v in _RETRY_SUCCESS.items()
+        },
+        "GENERATE_PAYMENT_LINK": {k.value: v for k, v in _LINK_SUCCESS.items()},
+        "SEND_PAYMENT_REMINDER": {
+            "default": _REMINDER_SUCCESS,
+            **{k.value: v for k, v in _REMINDER_BY_RISK.items()},
+        },
+        "note": "Probability that one attempt of this action collects the money.",
+    }
+
+
 @app.get("/api/scenarios")
 def scenarios() -> list[dict]:
     """The at-risk situations available to demonstrate."""

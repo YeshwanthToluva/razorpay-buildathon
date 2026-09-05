@@ -1556,6 +1556,51 @@ const RISK_LABEL = {
   OVERDUE_RECEIVABLE: 'Overdue receivable',
 };
 
+/* Plain language for every step. A viewer should never have to know the
+   vocabulary to follow what happened, and "FAILURE" in particular is
+   misleading: nothing errored, the customer simply did not pay. */
+const SAY_ACTION = {
+  RETRY_PAYMENT: 'Charge the card on file again, now',
+  SCHEDULE_RETRY: 'Try charging the card again later',
+  SEND_PAYMENT_REMINDER: 'Remind the customer that payment is due',
+  GENERATE_PAYMENT_LINK: 'Send a link so they can pay another way',
+  REQUEST_HUMAN_REVIEW: 'Hand the case to a human',
+  STOP_RECOVERY: 'Stop trying and close the case',
+};
+const SAY_OUTCOME = {
+  RETRY_PAYMENT: [
+    'The bank approved the charge. Money collected.',
+    'The bank declined the charge again.'],
+  SCHEDULE_RETRY: [
+    'The later attempt went through. Money collected.',
+    'The later attempt was declined too.'],
+  GENERATE_PAYMENT_LINK: [
+    'The customer opened the link and paid with a different method.',
+    'The link was delivered, but the customer has not paid it.'],
+  SEND_PAYMENT_REMINDER: [
+    'The reminder worked — the customer paid.',
+    'The reminder was delivered, but the customer has not paid yet.'],
+  REQUEST_HUMAN_REVIEW: ['Queued for a person to look at.', 'Queued for a person to look at.'],
+  STOP_RECOVERY: ['Case closed. No further attempts.', 'Case closed. No further attempts.'],
+};
+function odds(action, category){
+  if(!MECH || !MECH[action]) return null;
+  const table = MECH[action];
+  const v = table[category] !== undefined ? table[category] : table['default'];
+  return v === undefined ? null : v;
+}
+function sayOutcome(action, category, recovered, attempt){
+  const pair = SAY_OUTCOME[action] || ['Succeeded.', 'Did not collect.'];
+  let text = recovered ? pair[0] : pair[1];
+  const p = odds(action, category);
+  if(p !== null && p !== undefined){
+    text += ' On this kind of case that works about ' + Math.round(p * 100) +
+            '% of the time, and each attempt is a fresh roll of the dice' +
+            (attempt > 1 ? ' — which is why attempt ' + attempt + ' can land where the last one did not.' : '.');
+  }
+  return text;
+}
+
 function lvAdd(cls, kind, main, detail, right){
   const box = document.createElement('div');
   box.className = 'lvstep ' + cls;
@@ -1612,6 +1657,7 @@ async function loadScenarios(){
   }catch(e){ /* health check already reported it */ }
 }
 
+let lvCategory = null, lvAttempt = 0;
 let lvBusy = false;
 async function runLive(){
   if(lvBusy) return;
@@ -1629,6 +1675,7 @@ async function runLive(){
   document.getElementById('lvunsafe').textContent = '0';
   lvFacts([]);
   let atRisk = 0;
+  lvCategory = null; lvAttempt = 0;
 
   try{
     const res = await fetch(API + '/api/recover', {
@@ -1657,9 +1704,24 @@ async function runLive(){
         if(t === 'RISK_DETECTED'){
           atRisk = e.amount_minor;
           document.getElementById('lvrisk').textContent = rupee(atRisk);
-          lvAdd('detect','revenue at risk detected',
-            e.payment_id + ' · ' + rupee(e.amount_minor),
-            e.failure_category + ' — ' + e.scenario.replace(/_/g,' '));
+          lvCategory = e.failure_category;
+          lvAttempt = 0;
+          const why = {
+            CARD_EXPIRED: 'the card on file has expired, so it can never be charged again',
+            MANDATE_REVOKED: 'the customer cancelled the mandate, so it can never be charged again',
+            BANK_UNAVAILABLE: 'the bank timed out — usually temporary',
+            PROCESSOR_ERROR: 'the processor errored — usually temporary',
+            INSUFFICIENT_FUNDS: 'there was not enough money in the account',
+            DO_NOT_HONOR: 'the bank refused without saying why',
+            FRAUD_SUSPECTED: 'this looks like fraud',
+            CHECKOUT_DROPPED: 'the customer left before paying, so nothing was ever authorised',
+            PAYMENT_METHOD_DECLINED_AT_CHECKOUT: 'their card was declined at checkout, so nothing was authorised',
+            INVOICE_OVERDUE: 'this invoice is past its due date',
+            MANDATE_ABSENT: 'this invoice has no mandate, so it cannot be collected automatically',
+          }[e.failure_category] || e.failure_category;
+          lvAdd('detect','1 · revenue at risk detected',
+            rupee(e.amount_minor) + ' at risk on ' + e.payment_id,
+            'We could not collect it because ' + why + '.');
           lvFacts([
             ['payment', e.payment_id],
             ['risk', e.failure_category],
@@ -1671,20 +1733,29 @@ async function runLive(){
             ['run', e.run_id],
           ]);
         } else if(t === 'PROPOSAL_MADE'){
-          lvAdd('propose','agent proposes an intervention', e.proposed_action,
+          lvAdd('propose','2 · the agent decides what to do',
+            (SAY_ACTION[e.proposed_action] || e.proposed_action) +
+            ' <span style="font-weight:400;font-size:11px;color:var(--muted)">(' +
+            e.proposed_action + ')</span>',
             e.reasoning_summary || e.agent_diagnosis || '',
-            e.confidence != null ? 'confidence ' + e.confidence.toFixed(2) : '');
+            e.confidence != null ? 'agent confidence ' + Math.round(e.confidence*100) + '%' : '');
         } else if(t === 'POLICY_EVALUATED'){
           const ok = e.policy_decision === 'ALLOW';
-          lvAdd('policy ' + (ok ? 'ok' : ''), 'deterministic policy',
-            '<span class="lvverdict ' + e.policy_decision + '">' + e.policy_decision + '</span> ' +
-            '<span style="font-weight:400;font-size:12px;color:var(--muted)">' + e.policy_rule + '</span>',
-            e.policy_reason || '');
+          lvAdd('policy ' + (ok ? 'ok' : ''), '3 · is the agent allowed to do that?',
+            '<span class="lvverdict ' + e.policy_decision + '">' +
+            (ok ? 'ALLOWED' : (e.policy_decision === 'DENY' ? 'REFUSED' : 'NEEDS A HUMAN')) +
+            '</span> <span style="font-weight:400;font-size:11px;color:var(--muted)">rule: ' +
+            e.policy_rule + '</span>',
+            (ok ? 'Nothing in the rulebook forbids this, so it may run. '
+                : 'The rulebook refused it, so it never reaches the provider. ') +
+            (e.policy_reason || ''));
         } else if(t === 'ACTION_EXECUTED'){
           const got = e.revenue_recovered_minor || 0;
-          lvAdd('exec ' + (got ? 'win' : ''), 'executed against the provider',
-            e.executed_action + ' → ' + e.execution_result,
-            got ? 'Recovered ' + rupee(got) : 'Nothing recovered on this attempt');
+          lvAttempt += 1;
+          lvAdd('exec ' + (got ? 'win' : ''), '4 · what actually happened',
+            got ? 'Collected ' + rupee(got) : 'Still unpaid',
+            sayOutcome(e.executed_action, lvCategory, got, lvAttempt),
+            'attempt ' + lvAttempt);
           if(got){
             document.getElementById('lvrec').textContent = rupee(got);
             document.getElementById('lvbar').style.width =
@@ -1694,11 +1765,16 @@ async function runLive(){
           lvAdd('err','proposal rejected','malformed proposal', e.error || '');
         } else if(t === 'RUN_COMPLETE'){
           const got = e.recovered_minor || 0;
-          lvAdd('done ' + (got ? '' : 'zero'), 'workflow complete',
+          lvAdd('done ' + (got ? '' : 'zero'), 'done',
             got ? 'Recovered ' + rupee(got) + ' of ' + rupee(e.amount_minor)
-                : 'Closed without recovering — ' + e.final_recovery_state,
-            e.proposals + ' proposed · ' + e.denied + ' denied by policy · ' +
-            e.executed + ' executed · ' + e.unsafe_executed + ' unsafe executed');
+                : 'Closed without recovering anything',
+            (got
+              ? 'The agent took ' + e.executed + ' action' + (e.executed===1?'':'s') +
+                ' and got the money back.'
+              : 'The agent tried ' + e.executed + ' action' + (e.executed===1?'':'s') +
+                ' and the case ended as ' + e.final_recovery_state.toLowerCase() + '.') +
+            ' The rulebook refused ' + e.denied + ' of its ' + e.proposals +
+            ' proposals, and ' + e.unsafe_executed + ' unsafe actions reached the provider.');
           document.getElementById('lvunsafe').textContent = e.unsafe_executed;
         } else if(t === 'ERROR'){
           lvAdd('err','error', e.error || 'unknown', '');
@@ -1714,7 +1790,11 @@ async function runLive(){
 }
 
 lvRunBtn.addEventListener('click', runLive);
-checkApi().then(ok => { if(ok) loadScenarios(); });
+let MECH = null;
+async function loadMechanics(){
+  try{ MECH = await (await fetch(API + '/api/mechanics')).json(); }catch(e){}
+}
+checkApi().then(ok => { if(ok){ loadScenarios(); loadMechanics(); } });
 
 settleBars();
 </script>
