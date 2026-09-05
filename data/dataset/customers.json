@@ -1,7 +1,7 @@
 [
   {
     "id": "cust_0001",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -12,7 +12,7 @@
   },
   {
     "id": "cust_0002",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -23,7 +23,7 @@
   },
   {
     "id": "cust_0003",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -34,7 +34,7 @@
   },
   {
     "id": "cust_0004",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -45,7 +45,7 @@
   },
   {
     "id": "cust_0005",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -56,7 +56,7 @@
   },
   {
     "id": "cust_0006",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -67,7 +67,7 @@
   },
   {
     "id": "cust_0007",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -78,7 +78,7 @@
   },
   {
     "id": "cust_0008",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -89,7 +89,7 @@
   },
   {
     "id": "cust_0009",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -100,7 +100,7 @@
   },
   {
     "id": "cust_0010",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -111,7 +111,7 @@
   },
   {
     "id": "cust_0011",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -122,7 +122,7 @@
   },
   {
     "id": "cust_0012",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -133,7 +133,7 @@
   },
   {
     "id": "cust_0013",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -144,7 +144,7 @@
   },
   {
     "id": "cust_0014",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -155,7 +155,7 @@
   },
   {
     "id": "cust_0015",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -166,7 +166,7 @@
   },
   {
     "id": "cust_0016",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -177,7 +177,7 @@
   },
   {
     "id": "cust_0017",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -188,7 +188,7 @@
   },
   {
     "id": "cust_0018",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -199,7 +199,7 @@
   },
   {
     "id": "cust_0019",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -210,7 +210,7 @@
   },
   {
     "id": "cust_0020",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -221,7 +221,7 @@
   },
   {
     "id": "cust_0021",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -232,7 +232,7 @@
   },
   {
     "id": "cust_0022",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -243,7 +243,7 @@
   },
   {
     "id": "cust_0023",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -254,7 +254,7 @@
   },
   {
     "id": "cust_0024",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -265,7 +265,7 @@
   },
   {
     "id": "cust_0025",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -276,7 +276,7 @@
   },
   {
     "id": "cust_0026",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -287,7 +287,7 @@
   },
   {
     "id": "cust_0027",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -298,7 +298,7 @@
   },
   {
     "id": "cust_0028",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -309,7 +309,7 @@
   },
   {
     "id": "cust_0029",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -320,7 +320,7 @@
   },
   {
     "id": "cust_0030",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": true,
     "preferred_channel": "NONE",
@@ -331,7 +331,7 @@
   },
   {
     "id": "cust_0031",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": true,
     "preferred_channel": "NONE",
@@ -342,7 +342,7 @@
   },
   {
     "id": "cust_0032",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": true,
     "preferred_channel": "NONE",
@@ -353,7 +353,7 @@
   },
   {
     "id": "cust_0033",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": true,
     "preferred_channel": "NONE",
@@ -364,7 +364,7 @@
   },
   {
     "id": "cust_0034",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -375,7 +375,7 @@
   },
   {
     "id": "cust_0035",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -386,7 +386,7 @@
   },
   {
     "id": "cust_0036",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -397,7 +397,7 @@
   },
   {
     "id": "cust_0037",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -408,7 +408,7 @@
   },
   {
     "id": "cust_0038",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -419,7 +419,7 @@
   },
   {
     "id": "cust_0039",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -430,7 +430,7 @@
   },
   {
     "id": "cust_0040",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -441,7 +441,7 @@
   },
   {
     "id": "cust_0041",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -452,7 +452,7 @@
   },
   {
     "id": "cust_0042",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -463,7 +463,7 @@
   },
   {
     "id": "cust_0043",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "SMS",
@@ -474,7 +474,7 @@
   },
   {
     "id": "cust_0044",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -485,7 +485,7 @@
   },
   {
     "id": "cust_0045",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -496,7 +496,7 @@
   },
   {
     "id": "cust_0046",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -507,7 +507,7 @@
   },
   {
     "id": "cust_0047",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "SMB",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -518,7 +518,7 @@
   },
   {
     "id": "cust_0048",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -529,7 +529,7 @@
   },
   {
     "id": "cust_0049",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "RETAIL",
     "opted_out": false,
     "preferred_channel": "EMAIL",
@@ -540,13 +540,288 @@
   },
   {
     "id": "cust_0050",
-    "dataset_version": "synthetic-v1",
+    "dataset_version": "synthetic-v2",
     "segment": "ENTERPRISE",
     "opted_out": false,
     "preferred_channel": "EMAIL",
     "lifetime_payments": 10,
     "lifetime_failures": 5,
     "prior_successful_payments": 5,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0051",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 8,
+    "lifetime_failures": 0,
+    "prior_successful_payments": 8,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0052",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 7,
+    "lifetime_failures": 1,
+    "prior_successful_payments": 6,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0053",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 11,
+    "lifetime_failures": 0,
+    "prior_successful_payments": 11,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0054",
+    "dataset_version": "synthetic-v2",
+    "segment": "ENTERPRISE",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 5,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 3,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0055",
+    "dataset_version": "synthetic-v2",
+    "segment": "ENTERPRISE",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 6,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 4,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0056",
+    "dataset_version": "synthetic-v2",
+    "segment": "ENTERPRISE",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 6,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 4,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0057",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 8,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 5,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0058",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 5,
+    "lifetime_failures": 1,
+    "prior_successful_payments": 4,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0059",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 10,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 8,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0060",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 10,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 7,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0061",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": true,
+    "preferred_channel": "NONE",
+    "lifetime_payments": 25,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 23,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0062",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": true,
+    "preferred_channel": "NONE",
+    "lifetime_payments": 22,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 20,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0063",
+    "dataset_version": "synthetic-v2",
+    "segment": "ENTERPRISE",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 24,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 22,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0064",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 17,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 14,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0065",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 18,
+    "lifetime_failures": 1,
+    "prior_successful_payments": 17,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0066",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 19,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 16,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0067",
+    "dataset_version": "synthetic-v2",
+    "segment": "ENTERPRISE",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 20,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 17,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0068",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 18,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 15,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0069",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 14,
+    "lifetime_failures": 4,
+    "prior_successful_payments": 10,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0070",
+    "dataset_version": "synthetic-v2",
+    "segment": "ENTERPRISE",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 9,
+    "lifetime_failures": 2,
+    "prior_successful_payments": 7,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0071",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 16,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 13,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0072",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 12,
+    "lifetime_failures": 3,
+    "prior_successful_payments": 9,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0073",
+    "dataset_version": "synthetic-v2",
+    "segment": "SMB",
+    "opted_out": false,
+    "preferred_channel": "SMS",
+    "lifetime_payments": 32,
+    "lifetime_failures": 0,
+    "prior_successful_payments": 32,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0074",
+    "dataset_version": "synthetic-v2",
+    "segment": "RETAIL",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 29,
+    "lifetime_failures": 0,
+    "prior_successful_payments": 29,
+    "risk_flag": "NONE"
+  },
+  {
+    "id": "cust_0075",
+    "dataset_version": "synthetic-v2",
+    "segment": "SMB",
+    "opted_out": false,
+    "preferred_channel": "EMAIL",
+    "lifetime_payments": 26,
+    "lifetime_failures": 0,
+    "prior_successful_payments": 26,
     "risk_flag": "NONE"
   }
 ]

@@ -27,10 +27,18 @@ from afin.domain.enums import (
     FailureCategory,
     PaymentState,
     RecoveryState,
+    RiskType,
 )
 from afin.db.schema import customers, datasets, payments
 
-DATASET_VERSION = "synthetic-v1"
+#: v1 is frozen: the 50 payment-failure cases every committed experiment cites.
+#: Regenerating it must still produce sha256 ff25509a45e0..., so nothing may be
+#: added to or reordered within its scenario list.
+DATASET_V1 = "synthetic-v1"
+#: v2 extends the study to the full brief -- payment failures, checkout
+#: abandonment and overdue receivables.
+DATASET_V2 = "synthetic-v2"
+DATASET_VERSION = DATASET_V2
 DEFAULT_SEED = 20260304
 
 #: Dataset "now". Fixed so window arithmetic is reproducible across real days.
@@ -44,6 +52,10 @@ _FAILURE_CODES = {
     FailureCategory.MANDATE_REVOKED: "MANDATE_REVOKED",
     FailureCategory.DO_NOT_HONOR: "DO_NOT_HONOR",
     FailureCategory.FRAUD_SUSPECTED: "FRAUD_RISK_HIGH",
+    FailureCategory.CHECKOUT_DROPPED: "CHECKOUT_ABANDONED",
+    FailureCategory.PAYMENT_METHOD_DECLINED_AT_CHECKOUT: "CHECKOUT_DECLINED",
+    FailureCategory.INVOICE_OVERDUE: "INVOICE_PAST_DUE",
+    FailureCategory.MANDATE_ABSENT: "NO_ACTIVE_MANDATE",
 }
 
 
@@ -52,6 +64,7 @@ class Scenario:
     tag: str
     count: int
     category: FailureCategory
+    risk_type: RiskType = RiskType.PAYMENT_FAILURE
     #: Inclusive amount range in paise.
     amount_range: tuple[int, int] = (50_000, 900_000)
     retry_count: int = 0
@@ -68,7 +81,7 @@ class Scenario:
     history: tuple[int, int] = (20, 1)
 
 
-SCENARIOS: tuple[Scenario, ...] = (
+PAYMENT_FAILURE_SCENARIOS: tuple[Scenario, ...] = (
     Scenario("transient_bank_failure", 7, FailureCategory.BANK_UNAVAILABLE,
              hours_since_attempt=12),
     Scenario("insufficient_funds", 7, FailureCategory.INSUFFICIENT_FUNDS,
@@ -96,7 +109,42 @@ SCENARIOS: tuple[Scenario, ...] = (
              contact_count=2, history=(8, 6), hours_since_attempt=36),
 )
 
+EXTENDED_SCENARIOS: tuple[Scenario, ...] = (
+    # --- checkout abandonment: revenue at risk before any payment existed ---
+    Scenario("checkout_abandoned", 6, FailureCategory.CHECKOUT_DROPPED,
+             risk_type=RiskType.CHECKOUT_ABANDONMENT, window_hours=72,
+             hours_since_failure=6, amount_range=(80_000, 700_000), history=(6, 1)),
+    Scenario("checkout_card_declined", 4,
+             FailureCategory.PAYMENT_METHOD_DECLINED_AT_CHECKOUT,
+             risk_type=RiskType.CHECKOUT_ABANDONMENT, window_hours=72,
+             hours_since_failure=3, amount_range=(60_000, 900_000), history=(4, 2)),
+    Scenario("checkout_abandoned_opted_out", 2, FailureCategory.CHECKOUT_DROPPED,
+             risk_type=RiskType.CHECKOUT_ABANDONMENT, opted_out=True,
+             window_hours=72, hours_since_failure=10),
+
+    # --- overdue receivables: invoiced, past due, mandate may or may not exist ---
+    Scenario("receivable_overdue_with_mandate", 6, FailureCategory.INVOICE_OVERDUE,
+             risk_type=RiskType.OVERDUE_RECEIVABLE, window_hours=720,
+             hours_since_failure=480, amount_range=(150_000, 900_000), history=(18, 2)),
+    Scenario("receivable_no_mandate", 4, FailureCategory.MANDATE_ABSENT,
+             risk_type=RiskType.OVERDUE_RECEIVABLE, window_hours=720,
+             hours_since_failure=600, amount_range=(120_000, 800_000), history=(11, 3)),
+    Scenario("receivable_high_value", 3, FailureCategory.INVOICE_OVERDUE,
+             risk_type=RiskType.OVERDUE_RECEIVABLE, window_hours=720,
+             hours_since_failure=720, amount_range=(1_400_000, 5_000_000),
+             history=(26, 1)),
+)
+
+#: Everything, for v2.
+SCENARIOS: tuple[Scenario, ...] = PAYMENT_FAILURE_SCENARIOS + EXTENDED_SCENARIOS
+
+
+def scenarios_for(version: str) -> tuple[Scenario, ...]:
+    """v1 stays exactly as the experiments recorded it; v2 adds the other risks."""
+    return PAYMENT_FAILURE_SCENARIOS if version.startswith(DATASET_V1) else SCENARIOS
+
 TOTAL_PAYMENTS = sum(s.count for s in SCENARIOS)
+TOTAL_PAYMENTS_V1 = sum(s.count for s in PAYMENT_FAILURE_SCENARIOS)
 
 
 @dataclass
@@ -125,7 +173,7 @@ def generate(seed: int = DEFAULT_SEED, version: str = DATASET_VERSION) -> Genera
     ds = GeneratedDataset(version=version, seed=seed)
 
     index = 0
-    for scenario in SCENARIOS:
+    for scenario in scenarios_for(version):
         for _ in range(scenario.count):
             index += 1
             cid = f"cust_{index:04d}"
@@ -183,6 +231,7 @@ def generate(seed: int = DEFAULT_SEED, version: str = DATASET_VERSION) -> Genera
                         if scenario.retry_count > 0
                         else RecoveryState.PENDING.value
                     ),
+                    "risk_type": scenario.risk_type.value,
                     "failure_category": scenario.category.value,
                     "failure_code": _FAILURE_CODES[scenario.category],
                     "retry_count": scenario.retry_count,

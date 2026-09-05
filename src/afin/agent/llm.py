@@ -137,6 +137,7 @@ class LLMReasoner:
             amount_rupees=f"Rs {payment.amount_minor / 100:,.2f}",
             payment_state=payment.payment_state,
             recovery_state=payment.recovery_state,
+            risk_type=payment.risk_type,
             failure_category=payment.failure_category,
             failure_code=payment.failure_code,
             instrument_reusable=(

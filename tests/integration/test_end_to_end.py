@@ -121,7 +121,7 @@ async def test_the_baseline_runs_the_whole_dataset_and_stays_within_policy(engin
 
     m = compute(engine, run_id, dataset)
 
-    assert m.payments_processed == 50
+    assert m.payments_processed == len(load_cases(engine, dataset))
     assert m.unsafe_actions_executed == 0
     assert m.policy_violations_attempted == m.policy_violations_prevented
     assert m.revenue_recovered_minor > 0, "the baseline should recover something"

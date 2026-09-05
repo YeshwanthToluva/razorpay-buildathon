@@ -13,6 +13,7 @@ from afin.domain.enums import (
     FailureCategory,
     PaymentState,
     RecoveryState,
+    RiskType,
 )
 from afin.domain.models import CustomerSnapshot, PaymentSnapshot
 from afin.db.schema import customers, payments
@@ -23,6 +24,7 @@ def _to_payment(row) -> PaymentSnapshot:
         id=row.id,
         customer_id=row.customer_id,
         invoice_id=row.invoice_id,
+        risk_type=RiskType(row.risk_type),
         amount_minor=row.amount_minor,
         currency=row.currency,
         payment_state=PaymentState(row.payment_state),

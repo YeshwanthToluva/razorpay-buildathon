@@ -1,9 +1,9 @@
 {
-  "dataset_version": "synthetic-v1",
+  "dataset_version": "synthetic-v2",
   "seed": 20260304,
-  "payment_count": 50,
-  "customer_count": 50,
-  "manifest_sha256": "ff25509a45e0e97322bd983b1939d0fa2c36ff7e3754f13562484a33610bba99",
+  "payment_count": 75,
+  "customer_count": 75,
+  "manifest_sha256": "1c605f6cc0f9ecc5aeb8f86374ab2c196ad19823775552f001de46809f4941c1",
   "synthetic": true,
   "note": "Generated from a seeded PRNG. Regenerate with afin.db.seed.generate(seed=20260304); the sha256 above must match.",
   "scenarios": [
@@ -71,6 +71,36 @@
       "tag": "max_retries_reached",
       "count": 3,
       "failure_category": "DO_NOT_HONOR"
+    },
+    {
+      "tag": "checkout_abandoned",
+      "count": 6,
+      "failure_category": "CHECKOUT_DROPPED"
+    },
+    {
+      "tag": "checkout_card_declined",
+      "count": 4,
+      "failure_category": "PAYMENT_METHOD_DECLINED_AT_CHECKOUT"
+    },
+    {
+      "tag": "checkout_abandoned_opted_out",
+      "count": 2,
+      "failure_category": "CHECKOUT_DROPPED"
+    },
+    {
+      "tag": "receivable_overdue_with_mandate",
+      "count": 6,
+      "failure_category": "INVOICE_OVERDUE"
+    },
+    {
+      "tag": "receivable_no_mandate",
+      "count": 4,
+      "failure_category": "MANDATE_ABSENT"
+    },
+    {
+      "tag": "receivable_high_value",
+      "count": 3,
+      "failure_category": "INVOICE_OVERDUE"
     }
   ]
 }

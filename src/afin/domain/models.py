@@ -22,6 +22,7 @@ from afin.domain.enums import (
     FailureCategory,
     PaymentState,
     RecoveryState,
+    RiskType,
     TERMINAL_PAYMENT_STATES,
     TERMINAL_RECOVERY_STATES,
 )
@@ -51,6 +52,9 @@ class PaymentSnapshot:
     id: str
     customer_id: str
     invoice_id: str
+    #: How this revenue came to be at risk. Defaulted so existing fixtures and
+    #: the Sprint 1 dataset keep their meaning unchanged.
+    risk_type: RiskType
     amount_minor: int
     currency: str
     payment_state: PaymentState

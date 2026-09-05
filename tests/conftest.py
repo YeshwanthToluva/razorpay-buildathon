@@ -12,6 +12,7 @@ from afin.domain.enums import (
     FailureCategory,
     PaymentState,
     RecoveryState,
+    RiskType,
 )
 from afin.domain.models import CustomerSnapshot, PaymentSnapshot
 
@@ -37,6 +38,7 @@ def make_payment(**overrides) -> PaymentSnapshot:
         id="pay_0001",
         customer_id="cust_0001",
         invoice_id="inv_0001",
+        risk_type=RiskType.PAYMENT_FAILURE,
         amount_minor=250_000,  # Rs 2,500.00
         currency="INR",
         payment_state=PaymentState.FAILED,

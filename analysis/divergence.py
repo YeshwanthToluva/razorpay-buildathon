@@ -98,6 +98,12 @@ OPTIMAL = {
     "CARD_EXPIRED": "GENERATE_PAYMENT_LINK",
     "MANDATE_REVOKED": "GENERATE_PAYMENT_LINK",
     "FRAUD_SUSPECTED": "REQUEST_HUMAN_REVIEW",
+    # checkout abandonment: nothing was authorised, so a link is the only route
+    "CHECKOUT_DROPPED": "GENERATE_PAYMENT_LINK",
+    "PAYMENT_METHOD_DECLINED_AT_CHECKOUT": "GENERATE_PAYMENT_LINK",
+    # overdue receivables: collectable only where a mandate exists
+    "INVOICE_OVERDUE": "SCHEDULE_RETRY",
+    "MANDATE_ABSENT": "GENERATE_PAYMENT_LINK",
 }
 
 

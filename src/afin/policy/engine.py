@@ -27,7 +27,9 @@ from afin.domain.enums import (
     Decision,
     FINANCIAL_ACTIONS,
     FailureCategory,
+    NO_INSTRUMENT_ON_FILE,
     RETRYABLE_CATEGORIES,
+    RiskType,
     RiskLevel,
     SAFETY_VALVE_ACTIONS,
 )
@@ -200,6 +202,38 @@ def _rule_retry_cooldown(r: PolicyRequest) -> PolicyDecision | None:
     return None
 
 
+def _rule_risk_type_precondition(r: PolicyRequest) -> PolicyDecision | None:
+    """What the risk type makes mechanically possible.
+
+    An abandoned checkout never authorised an instrument, so there is nothing to
+    re-present: a retry is not a bad idea there, it is an impossible one. An
+    overdue receivable can be charged only where a mandate exists. Encoding this
+    in policy rather than in the prompt means an agent that gets it wrong is
+    stopped rather than trusted.
+    """
+    action = r.proposal.action_type
+    if action not in FINANCIAL_ACTIONS:
+        return None
+    if r.payment.risk_type in NO_INSTRUMENT_ON_FILE:
+        return _deny(
+            PolicyRule.RISK_TYPE_PRECONDITION,
+            f"{r.payment.risk_type} never authorised a payment instrument; "
+            "there is nothing to re-present. The customer must complete payment.",
+            RiskLevel.HIGH,
+        )
+    if (
+        r.payment.risk_type is RiskType.OVERDUE_RECEIVABLE
+        and r.payment.failure_category is FailureCategory.MANDATE_ABSENT
+    ):
+        return _deny(
+            PolicyRule.RISK_TYPE_PRECONDITION,
+            "this receivable has no active mandate, so it cannot be collected "
+            "automatically; the customer must be invoiced or sent a link",
+            RiskLevel.HIGH,
+        )
+    return None
+
+
 def _rule_action_precondition(r: PolicyRequest) -> PolicyDecision | None:
     action = r.proposal.action_type
     category = r.payment.failure_category
@@ -273,6 +307,7 @@ RULES = (
     (PolicyRule.RECOVERY_WINDOW_EXPIRED, _rule_recovery_window),
     (PolicyRule.MAX_RETRY_LIMIT, _rule_max_retry),
     (PolicyRule.RETRY_COOLDOWN, _rule_retry_cooldown),
+    (PolicyRule.RISK_TYPE_PRECONDITION, _rule_risk_type_precondition),
     (PolicyRule.ACTION_PRECONDITION, _rule_action_precondition),
     (PolicyRule.CONTACT_BUDGET, _rule_contact_budget),
     (PolicyRule.HIGH_VALUE_APPROVAL, _rule_high_value),

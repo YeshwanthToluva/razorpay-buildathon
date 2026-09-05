@@ -63,7 +63,8 @@ payments = Table(
     Column("currency", String(3), nullable=False),
     Column("payment_state", String(32), nullable=False),
     Column("recovery_state", String(32), nullable=False),
-    Column("failure_category", String(32), nullable=False),
+    Column("risk_type", String(32), nullable=False),
+    Column("failure_category", String(48), nullable=False),
     Column("failure_code", String(64), nullable=False),
     Column("retry_count", Integer, nullable=False, default=0),
     Column("contact_count", Integer, nullable=False, default=0),
@@ -181,6 +182,8 @@ ADDITIVE_COLUMNS_DDL = """
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_opted_out BOOLEAN;
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_prior_successful_payments INTEGER;
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_last_attempt_outcome VARCHAR(16);
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS risk_type VARCHAR(32) NOT NULL DEFAULT 'PAYMENT_FAILURE';
+ALTER TABLE payments ALTER COLUMN failure_category TYPE VARCHAR(48);
 -- Widened in place for experiment 002e: prompt version names outgrew 32 chars.
 -- Widening a varchar never rewrites or loses data.
 ALTER TABLE runs ALTER COLUMN prompt_version TYPE VARCHAR(64);

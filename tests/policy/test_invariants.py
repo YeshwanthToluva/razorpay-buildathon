@@ -20,6 +20,7 @@ from afin.domain.enums import (
     FailureCategory,
     PaymentState,
     RecoveryState,
+    RiskType,
     SAFETY_VALVE_ACTIONS,
 )
 from afin.policy.decisions import PolicyRule
@@ -151,6 +152,8 @@ def _rules_triggered_by_a_broad_sweep() -> set[PolicyRule]:
         {"amount_minor": 90_000_000},
         {"window_expires_at": NOW - timedelta(days=1)},
         {"last_attempt_at": NOW - timedelta(minutes=30)},
+        {"risk_type": RiskType.CHECKOUT_ABANDONMENT,
+         "failure_category": FailureCategory.CHECKOUT_DROPPED},
     ]
     for kw, action, delay, opted, pid in itertools.product(
         states, list(ActionType) + ["WIRE_FUNDS"], DELAYS, [False, True], ["pay_0001", "pay_X"]

@@ -13,7 +13,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Sequence
 
-from afin.domain.enums import ActionType, FailureCategory, RETRYABLE_CATEGORIES
+from afin.domain.enums import (
+    ActionType,
+    FailureCategory,
+    NO_INSTRUMENT_ON_FILE,
+    RETRYABLE_CATEGORIES,
+    RiskType,
+)
 from afin.domain.models import CustomerSnapshot, PaymentSnapshot, ProposedAction
 
 
@@ -58,6 +64,39 @@ class RuleBasedReasoner:
 
     def _decide(self, payment: PaymentSnapshot, customer: CustomerSnapshot, now: datetime):
         cat = payment.failure_category
+
+        # No instrument was ever authorised, so nothing can be re-presented.
+        # The only route to the money is asking the customer to complete it.
+        if payment.risk_type in NO_INSTRUMENT_ON_FILE:
+            if customer.opted_out:
+                return (
+                    ActionType.STOP_RECOVERY, None,
+                    "abandoned checkout with no permitted contact channel",
+                    "Nothing was authorised to re-present and the customer "
+                    "cannot be contacted, so no recovery route remains.",
+                )
+            return (
+                ActionType.GENERATE_PAYMENT_LINK, None,
+                "abandoned checkout; intent was present but payment never completed",
+                "No instrument was authorised, so the customer is sent a link to "
+                "finish the payment they had already chosen to make.",
+            )
+
+        # An invoice with no mandate cannot be collected automatically.
+        if cat is FailureCategory.MANDATE_ABSENT:
+            if customer.opted_out:
+                return (
+                    ActionType.STOP_RECOVERY, None,
+                    "overdue receivable, no mandate, no permitted contact",
+                    "Without a mandate or a contact channel there is no route to "
+                    "collect this invoice.",
+                )
+            return (
+                ActionType.GENERATE_PAYMENT_LINK, None,
+                "overdue receivable with no active mandate",
+                "The invoice cannot be collected automatically, so the customer "
+                "is sent a link to settle it.",
+            )
 
         if payment.is_disputed or cat is FailureCategory.FRAUD_SUSPECTED:
             return (

@@ -20,7 +20,7 @@ import struct
 from dataclasses import dataclass
 from datetime import datetime
 
-from afin.domain.enums import ActionType, ExecutionResult, FailureCategory
+from afin.domain.enums import ActionType, ExecutionResult, FailureCategory, RiskType
 from afin.domain.models import PaymentSnapshot, ProviderOutcome
 from afin.policy.authorization import AuthorizedAction
 
@@ -34,6 +34,12 @@ _RETRY_SUCCESS: dict[FailureCategory, float] = {
     FailureCategory.CARD_EXPIRED: 0.0,
     FailureCategory.MANDATE_REVOKED: 0.0,
     FailureCategory.FRAUD_SUSPECTED: 0.0,
+    # An abandoned checkout has no instrument to re-present at all.
+    FailureCategory.CHECKOUT_DROPPED: 0.0,
+    FailureCategory.PAYMENT_METHOD_DECLINED_AT_CHECKOUT: 0.0,
+    # An overdue invoice with a live mandate collects well; without one, never.
+    FailureCategory.INVOICE_OVERDUE: 0.55,
+    FailureCategory.MANDATE_ABSENT: 0.0,
 }
 
 #: P(customer pays) after being sent a link. A dead instrument is no obstacle
@@ -46,11 +52,23 @@ _LINK_SUCCESS: dict[FailureCategory, float] = {
     FailureCategory.CARD_EXPIRED: 0.55,
     FailureCategory.MANDATE_REVOKED: 0.45,
     FailureCategory.FRAUD_SUSPECTED: 0.0,
+    # A checkout link recovers well -- the customer had already chosen to buy.
+    FailureCategory.CHECKOUT_DROPPED: 0.45,
+    FailureCategory.PAYMENT_METHOD_DECLINED_AT_CHECKOUT: 0.50,
+    FailureCategory.INVOICE_OVERDUE: 0.40,
+    FailureCategory.MANDATE_ABSENT: 0.42,
 }
 
 #: A reminder nudges a customer who could always have paid; it cannot fix a
 #: broken instrument, so its ceiling is low and category-insensitive.
 _REMINDER_SUCCESS = 0.18
+
+#: Reminders work harder on some risks than others: an abandoned cart is a live
+#: intent, and an overdue invoice is a payment the customer already owes.
+_REMINDER_BY_RISK: dict[RiskType, float] = {
+    RiskType.CHECKOUT_ABANDONMENT: 0.30,
+    RiskType.OVERDUE_RECEIVABLE: 0.34,
+}
 
 #: Deferring an attempt helps most where the obstacle is time itself.
 _SCHEDULE_BONUS: dict[FailureCategory, float] = {
@@ -112,7 +130,8 @@ class RazorpaySimulator:
             return self._charge(payment, roll, p, ref, "payment link")
 
         if action is ActionType.SEND_PAYMENT_REMINDER:
-            return self._charge(payment, roll, _REMINDER_SUCCESS, ref, "reminder")
+            p = _REMINDER_BY_RISK.get(payment.risk_type, _REMINDER_SUCCESS)
+            return self._charge(payment, roll, p, ref, "reminder")
 
         return ProviderOutcome(
             result=ExecutionResult.REJECTED,

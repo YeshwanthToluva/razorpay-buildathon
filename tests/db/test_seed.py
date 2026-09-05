@@ -1,12 +1,48 @@
 from __future__ import annotations
 
-from afin.db.seed import DEFAULT_SEED, SCENARIOS, TOTAL_PAYMENTS, generate
+from afin.db.seed import (
+    DATASET_V1,
+    DATASET_V2,
+    DEFAULT_SEED,
+    PAYMENT_FAILURE_SCENARIOS,
+    SCENARIOS,
+    TOTAL_PAYMENTS,
+    TOTAL_PAYMENTS_V1,
+    generate,
+)
+from afin.domain.enums import RiskType
 from afin.domain.enums import CustomerRiskFlag, PaymentState
 
 
-def test_dataset_has_the_agreed_size():
-    assert TOTAL_PAYMENTS == 50
-    assert len(generate().payments) == 50
+def test_v1_is_frozen_at_the_size_every_experiment_cites():
+    """The committed experiment records all cite 50 payment-failure cases."""
+    assert TOTAL_PAYMENTS_V1 == 50
+    assert len(generate(version=DATASET_V1).payments) == 50
+
+
+def test_v1_contains_only_payment_failures():
+    assert {p["risk_type"] for p in generate(version=DATASET_V1).payments} == {
+        RiskType.PAYMENT_FAILURE.value
+    }
+
+
+def test_v2_covers_all_three_risk_types_in_the_brief():
+    kinds = {p["risk_type"] for p in generate(version=DATASET_V2).payments}
+    assert kinds == {
+        RiskType.PAYMENT_FAILURE.value,
+        RiskType.CHECKOUT_ABANDONMENT.value,
+        RiskType.OVERDUE_RECEIVABLE.value,
+    }
+    assert TOTAL_PAYMENTS == len(generate(version=DATASET_V2).payments)
+
+
+def test_v2_is_a_superset_of_v1():
+    """Extending the brief must not disturb the cases already studied."""
+    v1 = {p["id"]: p for p in generate(version=DATASET_V1).payments}
+    v2 = {p["id"]: p for p in generate(version=DATASET_V2).payments}
+    for pid, row in v1.items():
+        for field in ("amount_minor", "failure_category", "scenario_tag", "retry_count"):
+            assert v2[pid][field] == row[field], f"{pid}.{field} drifted"
 
 
 def test_generation_is_reproducible_for_a_fixed_seed():

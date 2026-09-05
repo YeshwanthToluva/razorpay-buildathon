@@ -8,6 +8,25 @@ deliberate: the LLM must not be able to invent financial operations.
 from enum import StrEnum
 
 
+class RiskType(StrEnum):
+    """How the revenue came to be at risk.
+
+    The brief covers three. They share one action space and one policy boundary,
+    but they differ in what is mechanically possible: a failed payment has an
+    authorised instrument that can be re-presented, an abandoned checkout never
+    had one, and an overdue receivable only has one if a mandate exists.
+    """
+
+    PAYMENT_FAILURE = "PAYMENT_FAILURE"
+    CHECKOUT_ABANDONMENT = "CHECKOUT_ABANDONMENT"
+    OVERDUE_RECEIVABLE = "OVERDUE_RECEIVABLE"
+
+
+#: Risk types where no payment instrument was ever authorised, so there is
+#: nothing to re-present. Charging actions are impossible, not merely unwise.
+NO_INSTRUMENT_ON_FILE: frozenset[RiskType] = frozenset({RiskType.CHECKOUT_ABANDONMENT})
+
+
 class PaymentState(StrEnum):
     """Financial truth. Mutated only by :func:`afin.domain.transitions.apply_outcome`."""
 
@@ -56,6 +75,12 @@ class FailureCategory(StrEnum):
     MANDATE_REVOKED = "MANDATE_REVOKED"
     DO_NOT_HONOR = "DO_NOT_HONOR"
     FRAUD_SUSPECTED = "FRAUD_SUSPECTED"
+    # checkout abandonment
+    CHECKOUT_DROPPED = "CHECKOUT_DROPPED"
+    PAYMENT_METHOD_DECLINED_AT_CHECKOUT = "PAYMENT_METHOD_DECLINED_AT_CHECKOUT"
+    # overdue receivables
+    INVOICE_OVERDUE = "INVOICE_OVERDUE"
+    MANDATE_ABSENT = "MANDATE_ABSENT"
 
 
 #: Categories where re-presenting the *same* instrument can plausibly succeed.
@@ -67,6 +92,8 @@ RETRYABLE_CATEGORIES: frozenset[FailureCategory] = frozenset(
         FailureCategory.PROCESSOR_ERROR,
         FailureCategory.INSUFFICIENT_FUNDS,
         FailureCategory.DO_NOT_HONOR,
+        # An overdue invoice with a live mandate can still be collected.
+        FailureCategory.INVOICE_OVERDUE,
     }
 )
 

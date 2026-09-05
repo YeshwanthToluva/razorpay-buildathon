@@ -106,6 +106,12 @@ The actions available to you are exactly:
   REQUEST_HUMAN_REVIEW   hand the case to a human
   STOP_RECOVERY          close the case and stop trying
 
+Revenue reaches you at risk in three ways, and they differ in what is possible:
+
+- PAYMENT_FAILURE      a payment was authorised and declined. The instrument is on file and may be re-presented.
+- CHECKOUT_ABANDONMENT the customer never completed payment. Nothing was authorised, so there is nothing to re-present; they must finish paying.
+- OVERDUE_RECEIVABLE   an invoice is past due. It can be collected automatically only where an active mandate exists.
+
 Domain facts you should rely on:
 
 - A gateway timeout or processor error is usually temporary and often clears on \
@@ -131,6 +137,7 @@ PAYMENT
   amount                 {amount_minor} paise ({amount_rupees})
   payment_state          {payment_state}
   recovery_state         {recovery_state}
+  risk_type              {risk_type}
   failure_reason         {failure_category} ({failure_code})
   instrument_reusable    {instrument_reusable}
   disputed               {is_disputed}
