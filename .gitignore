@@ -11,3 +11,7 @@ venv/
 !data/runs/
 !data/ledger/
 data/*.log
+
+# runtime artifacts from live demo runs
+data/links/
+data/outbox/

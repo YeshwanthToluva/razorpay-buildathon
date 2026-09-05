@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -25,7 +26,7 @@ sys.path.insert(0, "src")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from afin.agent.orchestrator import Orchestrator
@@ -40,7 +41,12 @@ from afin.domain.transitions import consequence
 from afin.policy.authorization import authorize
 from afin.policy.config import DEFAULT_POLICY_CONFIG
 from afin.policy.engine import PolicyRequest
+from afin.simulator.live_email import LiveEmailProvider, _rupees
 from afin.simulator.razorpay_sim import RazorpaySimulator
+from afin.tools import paylink
+from afin.tools.notify import Message, build_notifier
+
+PAY_BASE = os.environ.get("AFIN_PAY_BASE_URL", "http://localhost:8000").rstrip("/")
 
 app = FastAPI(title="Revenue Recovery Lab — live API")
 app.add_middleware(
@@ -61,6 +67,9 @@ class RecoverRequest(BaseModel):
     )
     reasoner: Literal["rules", "llm"] = "rules"
     profile: str = "gpt"
+    #: "simulated" lets the simulator decide whether a contacted customer pays.
+    #: "email" sends a real message with a real link and waits for a person.
+    channel: Literal["simulated", "email"] = "simulated"
 
 
 @app.get("/api/health")
@@ -237,6 +246,24 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
         picked = next((c for c in cases if c[0].scenario_tag == req.scenario), cases[0])
         payment, customer = picked
 
+        redirected_from = None
+        demo_to = os.environ.get("AFIN_DEMO_RECIPIENT", "").strip()
+        if req.channel == "email" and demo_to:
+            # Synthetic customers have @synthetic.invalid addresses, which the
+            # allowlist rightly refuses. Substitute the demo address BEFORE
+            # policy sees the case, so the engine checks the address that will
+            # actually receive the mail rather than one we intend to replace
+            # later. Announced, never silent.
+            import dataclasses
+
+            redirected_from = customer.email
+            customer = dataclasses.replace(customer, email=demo_to)
+            await queue.put({
+                "event_type": "DEMO_REDIRECT", "payment_id": payment.id,
+                "from": redirected_from, "to": demo_to,
+                "detail": "this synthetic customer's mail is delivered to the demo address",
+            })
+
         await queue.put({
             "event_type": "RISK_DETECTED", "payment_id": payment.id,
             "scenario": payment.scenario_tag, "amount_minor": payment.amount_minor,
@@ -249,13 +276,65 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
             "run_id": run_id, "reasoner": reasoner.name,
         })
 
+        live = req.channel == "email"
+        if live:
+            def announce(link, pay):
+                queue.put_nowait({
+                    "event_type": "LINK_SENT", "payment_id": pay.id,
+                    "recipient": link.recipient,
+                    "url": f"{PAY_BASE}/pay/{link.token}",
+                    "amount_minor": link.amount_minor,
+                })
+
+            provider = LiveEmailProvider(
+                notifier=build_notifier(), run_id=run_id, dataset_version=dataset,
+                pay_base_url=PAY_BASE,
+                demo_recipient=customer.email, redirected_from=redirected_from,
+                simulator=RazorpaySimulator(seed=DEFAULT_SEED), on_link=announce,
+            )
+        else:
+            provider = RazorpaySimulator(seed=DEFAULT_SEED)
+
         orch = Orchestrator(
-            engine=ENGINE, reasoner=reasoner, provider=RazorpaySimulator(seed=DEFAULT_SEED),
+            engine=ENGINE, reasoner=reasoner, provider=provider,
             ledger=ledger, config=DEFAULT_POLICY_CONFIG, now=EPOCH,
             dataset_version=dataset, observer=observe,
+            # One cycle in email mode: the case pauses on the customer, it does
+            # not keep messaging them while they decide.
+            max_cycles=1 if live else 4,
         )
         result = await orch.run_case(payment, customer)
         ledger.close_run()
+        if live:
+            # Hold the stream open while the customer decides.
+            token = None
+            for f in sorted(paylink.STORE.glob("*.json")):
+                l = paylink.load(f.stem)
+                if l and l.run_id == run_id:
+                    token = l.token
+            if token:
+                await queue.put({"event_type": "AWAITING_CUSTOMER",
+                                 "payment_id": payment.id,
+                                 "url": f"{PAY_BASE}/pay/{token}"})
+                for _ in range(600):          # up to ten minutes
+                    await asyncio.sleep(1)
+                    l = paylink.load(token)
+                    if l and l.settled:
+                        fresh = next(
+                            (c for c in load_cases(ENGINE, dataset) if c[0].id == payment.id),
+                            None,
+                        )
+                        got = fresh[0].recovered_amount_minor if fresh else l.amount_minor
+                        await queue.put({
+                            "event_type": "PAYMENT_RECEIVED", "payment_id": payment.id,
+                            "revenue_recovered_minor": got,
+                            "detail": "the customer settled the payment link",
+                        })
+                        result.recovered_minor = got
+                        if fresh:
+                            result.payment = fresh[0]
+                        break
+
         await queue.put({
             "event_type": "RUN_COMPLETE", "payment_id": payment.id,
             "recovered_minor": result.recovered_minor,
@@ -356,4 +435,170 @@ def evaluate_action(probe: PolicyProbe) -> dict:
             "retry_count": payment.retry_count, "is_disputed": payment.is_disputed,
             "opted_out": customer.opted_out,
         },
+    }
+
+
+
+# --------------------------------------------------------------------------
+# The customer's side of the loop
+# --------------------------------------------------------------------------
+
+_PAY_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settle {invoice}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+:root{{--bg:#f4f6f5;--surface:#fff;--line:#d5dbd9;--ink:#14201e;--muted:#65756f;
+--accent:#0d7d78;--good:#2f7a4f;--good-soft:#dcefe2}}
+*{{box-sizing:border-box}}
+body{{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;
+display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}}
+.card{{background:var(--surface);border:1px solid var(--line);border-radius:8px;max-width:430px;
+width:100%;padding:30px}}
+.brand{{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.09em;
+text-transform:uppercase;color:var(--accent)}}
+h1{{font-size:19px;margin:12px 0 4px;letter-spacing:-.01em}}
+.amt{{font-family:'IBM Plex Mono',monospace;font-size:38px;font-weight:600;margin:18px 0 6px;
+letter-spacing:-.02em}}
+.rows{{margin:20px 0;border-top:1px solid var(--line)}}
+.row{{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);
+font-family:'IBM Plex Mono',monospace;font-size:12.5px}}
+.row span:first-child{{color:var(--muted)}}
+button{{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;
+padding:13px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;
+cursor:pointer}}
+button:hover{{filter:brightness(1.07)}} button[disabled]{{opacity:.55;cursor:progress}}
+.note{{color:var(--muted);font-size:11.5px;margin-top:16px;line-height:1.5}}
+.done{{background:var(--good-soft);border:1px solid var(--good);border-radius:6px;padding:18px;
+text-align:center}}
+.done .t{{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--good)}}
+.done .d{{font-size:13px;color:var(--ink);margin-top:6px}}
+</style></head><body><div class="card">
+<div class="brand">Secure payment · demo</div>
+<h1>Settle invoice {invoice}</h1>
+<div class="amt">{amount}</div>
+<div class="rows">
+  <div class="row"><span>invoice</span><span>{invoice}</span></div>
+  <div class="row"><span>payment</span><span>{payment_id}</span></div>
+  <div class="row"><span>billed to</span><span>{recipient}</span></div>
+</div>
+<div id="area">{area}</div>
+<p class="note">This page settles a synthetic case in a recovery experiment.
+No card is collected and no real money moves. Clicking Pay tells the agent the
+customer paid, and it closes the case from there.</p>
+</div>
+<script>
+const btn = document.getElementById('pay');
+if(btn) btn.addEventListener('click', async () => {{
+  btn.disabled = true; btn.textContent = 'Processing…';
+  try{{
+    const r = await fetch('/api/pay/{token}', {{method:'POST'}});
+    const d = await r.json();
+    document.getElementById('area').innerHTML =
+      '<div class="done"><div class="t">Payment received</div><div class="d">' +
+      (d.already_settled ? 'This invoice was already settled.'
+                         : 'Thank you. ' + d.recovered + ' has been collected and a receipt is on its way.') +
+      '</div></div>';
+  }}catch(e){{
+    btn.disabled = false; btn.textContent = 'Try again';
+  }}
+}});
+</script></body></html>"""
+
+
+@app.get("/pay/{token}", response_class=HTMLResponse)
+def pay_page(token: str) -> HTMLResponse:
+    link = paylink.load(token)
+    if link is None:
+        return HTMLResponse("<p>This payment link is not valid.</p>", status_code=404)
+    area = (
+        '<div class="done"><div class="t">Already settled</div>'
+        '<div class="d">This invoice has been paid.</div></div>'
+        if link.settled
+        else f'<button id="pay">Pay {_rupees(link.amount_minor)}</button>'
+    )
+    return HTMLResponse(
+        _PAY_PAGE.format(
+            invoice=link.invoice_id, amount=_rupees(link.amount_minor),
+            payment_id=link.payment_id, recipient=link.recipient,
+            area=area, token=token,
+        )
+    )
+
+
+@app.post("/api/pay/{token}")
+def settle(token: str) -> dict:
+    """The customer paid. Record it the same way any other collection is recorded.
+
+    The settlement becomes a ProviderOutcome and goes through the same reducer
+    and the same append-only ledger as a simulated collection, so a recovery
+    driven by a person clicking Pay is auditable exactly like any other.
+    """
+    from afin.domain.enums import ActionType, ExecutionResult
+    from afin.domain.models import ProviderOutcome
+    from afin.domain.transitions import apply_outcome, consequence
+    from afin.db.repository import load_cases, persist_payment
+    from afin.audit.ledger import AuditLedger, EventType, observed_state
+
+    link = paylink.load(token)
+    if link is None:
+        return {"ok": False, "error": "unknown link"}
+    if link.settled:
+        return {"ok": True, "already_settled": True,
+                "recovered": _rupees(link.amount_minor)}
+
+    pairs = load_cases(ENGINE, link.dataset_version)
+    found = next((c for c in pairs if c[0].id == link.payment_id), None)
+    if found is None:
+        return {"ok": False, "error": "payment not found"}
+    payment, customer = found
+    if payment.is_terminal:
+        paylink.mark_settled(token)
+        return {"ok": True, "already_settled": True,
+                "recovered": _rupees(payment.recovered_amount_minor)}
+
+    outcome = ProviderOutcome(
+        result=ExecutionResult.SUCCESS,
+        amount_recovered_minor=link.amount_minor,
+        failure_code=None,
+        provider_ref=f"paylink_{token}",
+        detail="customer settled the payment link",
+    )
+    after = apply_outcome(payment, ActionType.GENERATE_PAYMENT_LINK, outcome, EPOCH)
+    persist_payment(ENGINE, after, link.dataset_version)
+    paylink.mark_settled(token)
+
+    ledger = AuditLedger(engine=ENGINE, run_id=link.run_id)
+    ledger.record(
+        payment_id=payment.id, cycle=99, event_type=EventType.ACTION_EXECUTED,
+        observed_state_json=observed_state(payment, customer),
+        executed_action=ActionType.GENERATE_PAYMENT_LINK.value,
+        execution_result=ExecutionResult.SUCCESS.value,
+        policy_decision="ALLOW", policy_rule="PERMITTED",
+        revenue_recovered_minor=link.amount_minor,
+        resulting_payment_state=after.payment_state.value,
+        resulting_recovery_state=after.recovery_state.value,
+    )
+
+    receipt = build_notifier().send(Message(
+        to=link.recipient,
+        subject=f"Payment received — {_rupees(link.amount_minor)} for {link.invoice_id}",
+        body_html=(
+            "<div style='font-family:system-ui,-apple-system,sans-serif;max-width:540px;"
+            "color:#14201e;line-height:1.55'>"
+            f"<p>Thank you. We have received <strong>{_rupees(link.amount_minor)}</strong> "
+            f"for invoice <code>{link.invoice_id}</code>.</p>"
+            f"<p>{consequence(payment.risk_type, True)}</p>"
+            "<hr style='border:none;border-top:1px solid #d5dbd9;margin:22px 0'>"
+            "<p style='color:#65756f;font-size:12.5px'>This receipt was sent by the same "
+            "autonomous recovery agent that contacted you, after it observed the payment "
+            "and closed the case. Synthetic test data — no real money was taken.</p></div>"
+        ),
+    ))
+    return {
+        "ok": True, "already_settled": False,
+        "recovered": _rupees(link.amount_minor),
+        "payment_state": after.payment_state.value,
+        "recovery_state": after.recovery_state.value,
+        "receipt_sent": receipt.delivered,
     }
