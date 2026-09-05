@@ -704,6 +704,7 @@ body::before{
 .lvtrack i{display:block;height:100%;width:0;background:var(--good);border-radius:3px;
   transition:width 520ms cubic-bezier(.22,.8,.28,1)}
 .lvfacts{display:grid;gap:5px;font-family:var(--mono);font-size:11px}
+.lvfacts[hidden]{display:none}
 .lvfacts span{display:flex;justify-content:space-between;gap:10px;color:var(--muted)}
 .lvfacts span b{color:var(--ink-2);font-weight:500;text-align:right;overflow-wrap:anywhere}
 .lvinv{display:flex;align-items:center;gap:12px;border-color:var(--good);background:var(--good-soft)}
@@ -759,6 +760,9 @@ details.sp.err{border-left-color:var(--crit)}
 .modal{position:fixed;inset:0;z-index:60;background:color-mix(in srgb,#000 62%,transparent);
   display:flex;align-items:flex-start;justify-content:center;padding:5vh 20px;overflow-y:auto;
   animation:fade 160ms ease both}
+/* display:flex outranks the browser's own [hidden] rule, so the modal is closed
+   here or it is never closed at all. */
+.modal[hidden]{display:none}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .mbox{position:relative;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--radius);max-width:660px;width:100%;padding:26px 28px;
@@ -977,7 +981,6 @@ footer code{font-family:var(--mono)}
   <div class="controls">
     <label class="ctl" for="rparm">Run</label><select id="rparm"></select>
     <div class="presets" id="presets" role="group" aria-label="Filter cases"></div>
-    <label class="ctl" for="rpfilter">Class</label><select id="rpfilter"></select>
   </div>
   <div class="replay">
     <div class="plist" id="plist" role="listbox" aria-label="Payments"></div>
@@ -1060,10 +1063,10 @@ const rupee = m => '₹' + (m/100).toLocaleString('en-IN',{maximumFractionDigits
 const pct = v => (v*100).toFixed(1) + '%';
 const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
 
-const BLOCKED_TOTAL = D.arms.reduce((s,a) =>
-  s + Object.values(a.denials_by_rule||{}).reduce((x,y)=>x+y,0), 0);
 const base = D.arms.find(a => a.is_baseline);   // still used to resolve run ids
 const agents = D.arms.filter(a => !a.is_baseline);
+const BLOCKED_TOTAL = agents.reduce((s,a) =>
+  s + Object.values(a.denials_by_rule||{}).reduce((x,y)=>x+y,0), 0);
 const bestAgent = agents.reduce((a,b) => a.metrics.recovery_rate >= b.metrics.recovery_rate ? a : b);
 
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1141,16 +1144,11 @@ hook.append(evidence([
 ]));
 
 /* ---- replay ---- */
-const rpArm = document.getElementById('rparm'), rpFilter = document.getElementById('rpfilter');
+const rpArm = document.getElementById('rparm');
 agents.forEach(a => rpArm.append(new Option(a.label, a.run_id)));
-rpArm.value = divArm.value;
+rpArm.value = agents[0].run_id;
 let selected = null;
 
-function classOf(runId, pid){
-  const b = D.divergence[runId]; if(!b) return null;
-  for(const [k,v] of Object.entries(b)) if(v.payments.includes(pid)) return k;
-  return null;
-}
 const PRESETS = [
   ['recovered','Money recovered', (pid,runId) =>
       ((D.replay[runId]||{})[pid] || {}).revenue > 0],
@@ -1169,16 +1167,10 @@ const PRESETS = [
   ['all','All cases', () => true],
 ];
 let preset = 'recovered';
-function deltaFor(pid, runId){
-  const a = (D.replay[runId]||{})[pid], b = (D.replay[base.run_id]||{})[pid];
-  if(!a || !b || runId === base.run_id) return 0;
-  return a.revenue - b.revenue;
-}
 function setPreset(key){
   preset = key;
   [...document.getElementById('presets').children].forEach(btn =>
     btn.setAttribute('aria-pressed', String(btn.dataset.k === key)));
-  if(key) rpFilter.value = 'all';
 }
 function buildPresets(){
   const box = document.getElementById('presets');
@@ -1194,22 +1186,12 @@ function buildPresets(){
   });
 }
 
-function buildFilter(){
-  const cur = rpFilter.value;
-  rpFilter.innerHTML = '';
-  rpFilter.append(new Option('All payments','all'));
-  const b = D.divergence[rpArm.value];
-  if(b) Object.keys(b).sort().forEach(k => rpFilter.append(new Option(LABELS[k]||k, k)));
-  rpFilter.value = [...rpFilter.options].some(o => o.value===cur) ? cur : 'all';
-}
 function renderList(){
   const runId = rpArm.value, pays = D.replay[runId] || {};
   const list = document.getElementById('plist'); list.innerHTML = '';
   const presetFn = (PRESETS.find(x => x[0] === preset) || PRESETS[0])[2];
-  const ids = Object.keys(pays).sort().filter(pid => {
-    if(preset && preset !== 'all') return presetFn(pid, runId);
-    return rpFilter.value === 'all' || classOf(runId, pid) === rpFilter.value;
-  });
+  const ids = Object.keys(pays).sort().filter(
+    pid => preset === 'all' || presetFn(pid, runId));
   if(!ids.length){ list.append(el('div','pitem','<span class="psc">No payments in this class</span>')); document.getElementById('chain').innerHTML=''; return; }
   ids.forEach(pid => {
     const p = pays[pid];
@@ -1370,10 +1352,9 @@ function renderChain(){
   c.append(out);
 }
 rpArm.addEventListener('change', () => {
-  buildFilter(); buildPresets(); renderRunMeta(); renderList(); renderChain();
+  buildPresets(); renderRunMeta(); renderList(); renderChain();
 });
-rpFilter.addEventListener('change', () => { setPreset(null); renderList(); renderChain(); });
-buildFilter(); buildPresets(); renderRunMeta();
+buildPresets(); renderRunMeta();
 selected = 'pay_0033'; renderList(); renderChain();
 
 /* ---- safety ---- */
@@ -1460,6 +1441,9 @@ document.body.append(modal);
 const closeModal = () => { modal.hidden = true; };
 modal.addEventListener('click', ev => { if(ev.target === modal) closeModal(); });
 modal.querySelector('.mclose').addEventListener('click', closeModal);
+document.addEventListener('keydown', ev => {
+  if(ev.key === 'Escape' && !modal.hidden) closeModal();
+});
 document.addEventListener('keydown', ev => { if(ev.key === 'Escape') closeModal(); });
 
 async function showBlocked(h){
