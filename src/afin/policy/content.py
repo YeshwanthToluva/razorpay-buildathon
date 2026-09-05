@@ -25,6 +25,7 @@ class ContentRule(StrEnum):
     PRESSURE_OR_THREAT = "PRESSURE_OR_THREAT"
     ASKS_FOR_CREDENTIALS = "ASKS_FOR_CREDENTIALS"
     LEAKS_INTERNALS = "LEAKS_INTERNALS"
+    CONTRADICTS_THE_CASE = "CONTRADICTS_THE_CASE"
     OVERLONG = "OVERLONG"
     PERMITTED = "PERMITTED"
 
@@ -69,6 +70,19 @@ INTERNAL_JARGON = (
     r"\bprior[_ ]successful[_ ]payments\b", r"\blifetime[_ ]payments\b",
 )
 
+#: Claims about a payment instrument. Harmless on a failed charge, false on an
+#: abandoned checkout where nothing was ever authorised -- observed in practice:
+#: asked to write about a dropped basket, the model told the customer their card
+#: on file was unavailable. There was no card.
+INSTRUMENT_CLAIMS = (
+    r"\b(?:your|the) card (?:on file|we have|ending)\b",
+    r"\bcard on file\b",
+    r"\b(?:your|the) (?:existing|saved|stored) payment method\b",
+    r"\bthe payment (?:attempt )?(?:was )?declined\b",
+    r"\bwe (?:tried|attempted) to charge\b",
+    r"\byour bank declined\b",
+)
+
 MAX_CHARS = 1200
 
 
@@ -96,6 +110,7 @@ def evaluate_message(
     *,
     amount_minor: int,
     invoice_id: str,
+    instrument_on_file: bool = True,
 ) -> ContentDecision:
     """Decide whether this message may be sent. Pure and total."""
     trace: list[ContentRule] = []
@@ -137,6 +152,19 @@ def evaluate_message(
                 "is indistinguishable from phishing",
                 tuple(trace),
             )
+
+    trace.append(ContentRule.CONTRADICTS_THE_CASE)
+    if not instrument_on_file:
+        for pattern in INSTRUMENT_CLAIMS:
+            m = re.search(pattern, lowered)
+            if m:
+                return ContentDecision(
+                    False, ContentRule.CONTRADICTS_THE_CASE,
+                    "the message describes a payment instrument or a declined "
+                    f"charge ({m.group(0)!r}), but nothing was ever authorised on "
+                    "this case, so no card exists and no charge was attempted",
+                    tuple(trace),
+                )
 
     trace.append(ContentRule.LEAKS_INTERNALS)
     for pattern in INTERNAL_JARGON:

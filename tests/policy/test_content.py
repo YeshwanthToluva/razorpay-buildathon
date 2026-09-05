@@ -126,3 +126,41 @@ def test_the_decision_records_which_rules_were_consulted():
 def test_evaluation_is_total_over_odd_input():
     for text in ("", "   ", "🙂", "<script>alert(1)</script>"):
         assert isinstance(check(text).allowed, bool)
+
+
+
+# --- the message has to be true about this case ---------------------------
+
+ABANDONED = ("We could not collect Rs 5,518.00 for invoice inv_0015. "
+             "Your card on file appears to be unavailable for this charge. "
+             "Reply if you have questions.")
+
+
+def test_a_message_cannot_invent_a_card_that_never_existed():
+    """Observed in practice: asked to write about an abandoned checkout, the
+    model told the customer their card on file was unavailable. There was no
+    card -- nothing was ever authorised."""
+    d = evaluate_message(ABANDONED, amount_minor=551800, invoice_id="inv_0015",
+                         instrument_on_file=False)
+    assert d.allowed is False
+    assert d.rule is ContentRule.CONTRADICTS_THE_CASE
+
+
+def test_the_same_sentence_is_fine_when_a_card_does_exist():
+    """The rule is about truth on this case, not a banned phrase list."""
+    d = evaluate_message(ABANDONED, amount_minor=551800, invoice_id="inv_0015",
+                         instrument_on_file=True)
+    assert d.allowed is True
+
+
+@pytest.mark.parametrize("claim", [
+    "The payment attempt was declined.",
+    "Your bank declined the charge.",
+    "We tried to charge your saved payment method.",
+])
+def test_no_charge_may_be_described_when_none_was_attempted(claim):
+    d = evaluate_message(
+        f"Invoice inv_0015, Rs 5,518.00 outstanding. {claim} Reply with questions.",
+        amount_minor=551800, invoice_id="inv_0015", instrument_on_file=False)
+    assert d.allowed is False
+    assert d.rule is ContentRule.CONTRADICTS_THE_CASE

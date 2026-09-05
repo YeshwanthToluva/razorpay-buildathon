@@ -1,0 +1,121 @@
+{
+  "model": "gpt-5.4-mini",
+  "prompt_version": "recovery-analyst-v2-explicit-state",
+  "note": "Real output from afin.agent.llm.LLMReasoner.compose(), each checked by afin.policy.content.evaluate_message before it could be sent.",
+  "examples": [
+    {
+      "case": "expired card, long-standing customer",
+      "action": "GENERATE_PAYMENT_LINK",
+      "invoice_id": "inv_0015",
+      "amount_minor": 551800,
+      "failure_category": "CARD_EXPIRED",
+      "risk_type": "PAYMENT_FAILURE",
+      "customer": {
+        "segment": "ENTERPRISE",
+        "lifetime_payments": 41,
+        "prior_successful_payments": 40
+      },
+      "rule_set_message": "We were unable to collect Rs 5,518.00 for invoice inv_0015, because the card we had on file has expired, so we cannot simply try it again. You can settle it using the link below.",
+      "agent_message": {
+        "subject": "Rs 5,518.00 due on invoice inv_0015",
+        "opening": "We couldn\u2019t collect Rs 5,518.00 for invoice inv_0015 because the payment attempt was declined.",
+        "explanation": "This can happen for a few reasons, and a second attempt often goes through. If your card has expired, please use a different payment method; if your bank declined the first attempt, trying again may help.",
+        "tip": "Please try the payment again, or update your payment method if needed.",
+        "closing": "If you have any questions, just reply to this email and we\u2019ll help.",
+        "cta_label": "Pay invoice"
+      },
+      "content_policy": {
+        "allowed": true,
+        "rule": "PERMITTED",
+        "reason": "message may be sent",
+        "rules_checked": [
+          "OVERLONG",
+          "UNAUTHORISED_COMMITMENT",
+          "PRESSURE_OR_THREAT",
+          "ASKS_FOR_CREDENTIALS",
+          "LEAKS_INTERNALS",
+          "FABRICATED_AMOUNT",
+          "MISSING_REQUIRED_FACT",
+          "PERMITTED"
+        ]
+      },
+      "chars": 438
+    },
+    {
+      "case": "bank declined once, mixed history",
+      "action": "SCHEDULE_RETRY",
+      "invoice_id": "inv_0042",
+      "amount_minor": 177600,
+      "failure_category": "DO_NOT_HONOR",
+      "risk_type": "PAYMENT_FAILURE",
+      "customer": {
+        "segment": "RETAIL",
+        "lifetime_payments": 9,
+        "prior_successful_payments": 5
+      },
+      "rule_set_message": "We were unable to collect Rs 1,776.00 for invoice inv_0042, because your bank declined the payment. You can settle it using the link below.",
+      "agent_message": {
+        "subject": "Invoice inv_0042 \u2014 Rs 1,776.00",
+        "opening": "We couldn\u2019t collect Rs 1,776.00 for invoice inv_0042 because the payment attempt was declined.",
+        "explanation": "This was the first attempt, and a second try often goes through. If your card has expired or been replaced, please use a different payment method.",
+        "tip": "If you\u2019d like, you can try the payment again with an updated card or another method.",
+        "closing": "If you have any questions, just reply here and we\u2019ll help.",
+        "cta_label": "Try payment again"
+      },
+      "content_policy": {
+        "allowed": true,
+        "rule": "PERMITTED",
+        "reason": "message may be sent",
+        "rules_checked": [
+          "OVERLONG",
+          "UNAUTHORISED_COMMITMENT",
+          "PRESSURE_OR_THREAT",
+          "ASKS_FOR_CREDENTIALS",
+          "LEAKS_INTERNALS",
+          "FABRICATED_AMOUNT",
+          "MISSING_REQUIRED_FACT",
+          "PERMITTED"
+        ]
+      },
+      "chars": 385
+    },
+    {
+      "case": "abandoned checkout, new customer",
+      "action": "GENERATE_PAYMENT_LINK",
+      "invoice_id": "inv_0051",
+      "amount_minor": 562000,
+      "failure_category": "CHECKOUT_DROPPED",
+      "risk_type": "CHECKOUT_ABANDONMENT",
+      "customer": {
+        "segment": "RETAIL",
+        "lifetime_payments": 1,
+        "prior_successful_payments": 0
+      },
+      "rule_set_message": "We were unable to collect Rs 5,620.00 for invoice inv_0051, because your order was never completed. You can settle it using the link below.",
+      "agent_message": {
+        "subject": "Invoice inv_0051 \u2014 Rs 5,620.00",
+        "opening": "We couldn\u2019t collect Rs 5,620.00 for invoice inv_0051 because the payment was declined.",
+        "explanation": "The card on file appears to be unavailable for this charge. If that card has expired or been replaced, please use a different payment method when you\u2019re ready.",
+        "tip": "If you\u2019ve already updated your card, please try the payment again.",
+        "closing": "If you have any questions, just reply here and we\u2019ll help.",
+        "cta_label": "Update payment"
+      },
+      "content_policy": {
+        "allowed": true,
+        "rule": "PERMITTED",
+        "reason": "message may be sent",
+        "rules_checked": [
+          "OVERLONG",
+          "UNAUTHORISED_COMMITMENT",
+          "PRESSURE_OR_THREAT",
+          "ASKS_FOR_CREDENTIALS",
+          "LEAKS_INTERNALS",
+          "FABRICATED_AMOUNT",
+          "MISSING_REQUIRED_FACT",
+          "PERMITTED"
+        ]
+      },
+      "chars": 372
+    }
+  ]
+}

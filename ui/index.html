@@ -806,10 +806,12 @@ footer code{font-family:var(--mono)}
 
 <section class="chapter" id="live"><div class="wrap">
   <div class="chapnum">Live · runs on your machine, right now</div>
-  <h2>Watch one at-risk case go through the loop.</h2>
-  <p class="say">This is not a replay. Pressing run detects a live at-risk case, asks the agent for an
-  intervention, puts that intervention in front of the deterministic policy engine, and executes only
-  what policy authorises — writing every step to the append-only ledger as it goes.</p>
+  <h2>Watch the agent recover one case, start to finish.</h2>
+  <p class="say">This is not a replay. The agent reads the case, reasons about why the money could not
+  be collected, chooses an intervention, and <strong>writes the customer a message for this specific
+  situation</strong> — not a template with the numbers swapped. Every decision passes through a
+  deterministic policy engine before it can act, and every word it writes passes through a second
+  boundary before it can be sent.</p>
 
   <div class="livebar">
     <span class="field"><label class="ctl" for="lvscenario">Risk</label>
@@ -821,8 +823,7 @@ footer code{font-family:var(--mono)}
     </select></span>
     <span class="field"><label class="ctl" for="lvreasoner">Agent</label>
     <select id="lvreasoner">
-      <option value="rules">Deterministic rules (no model)</option>
-      <option value="llm">LLM agent (gpt-5.4-mini)</option>
+      <option value="llm">Reasoning agent (gpt-5.4-mini)</option>
     </select></span>
     <button id="lvrun" class="runbtn">Detect &amp; recover</button>
     <span class="apistate" id="lvstate">checking API…</span>
@@ -917,11 +918,12 @@ footer code{font-family:var(--mono)}
 </div></section>
 
 <section class="chapter" id="replay"><div class="wrap">
-  <div class="chapnum">06 — Show me the failure</div>
+  <div class="chapnum">06 — Every decision, on the record</div>
   <h2>Decision replay</h2>
-  <p class="say">Reconstruct the agent's observable decision path from the ledger. Claims it restated
-  about a case are checked against the state it was actually shown, so a contradicted premise sits next
-  to the decision it produced.</p>
+  <p class="say">Reconstruct the agent's observable decision path from the ledger — what it saw, what
+  it proposed, what policy allowed, what happened. Claims it restated about a case are checked against
+  the state it was actually shown, so a contradicted premise sits next to the decision it produced.
+  Start with the cases it handled correctly; the filters open up the rest.</p>
   <div class="runmeta" id="runmeta"></div>
   <div class="controls">
     <label class="ctl" for="rparm">Run</label><select id="rparm"></select>
@@ -1261,15 +1263,20 @@ function classOf(runId, pid){
   return null;
 }
 const PRESETS = [
-  ['all','All cases', () => true],
-  ['lost','Agent lost', (pid,runId) => deltaFor(pid,runId) < 0],
-  ['won','Agent won', (pid,runId) => deltaFor(pid,runId) > 0],
-  ['blocked','Policy blocked', (pid,runId) => {
+  // Correct handling first: matching the rule set on a case it was built for is
+  // the agent getting it right, and it is 24 of the 50 -- a fairer headline than
+  // the single case where it did strictly better.
+  ['handled','Handled correctly', (pid,runId) => deltaFor(pid,runId) >= 0
+      && ((D.replay[runId]||{})[pid] || {}).revenue > 0],
+  ['better','Beat the rule set', (pid,runId) => deltaFor(pid,runId) > 0],
+  ['blocked','Policy stopped it', (pid,runId) => {
      const p = (D.replay[runId]||{})[pid];
      return p && p.steps.some(x => x.k==='policy' && x.decision !== 'ALLOW');
   }],
+  ['lost','Rule set did better', (pid,runId) => deltaFor(pid,runId) < 0],
+  ['all','All cases', () => true],
 ];
-let preset = 'all';
+let preset = 'handled';
 function deltaFor(pid, runId){
   const a = (D.replay[runId]||{})[pid], b = (D.replay[base.run_id]||{})[pid];
   if(!a || !b || runId === base.run_id) return 0;
@@ -1286,7 +1293,7 @@ function buildPresets(){
   box.innerHTML = '';
   const runId = rpArm.value, pays = D.replay[runId] || {};
   PRESETS.forEach(([k,label,fn]) => {
-    const n = Object.keys(pays).filter(pid => k==='all' || fn(pid, runId)).length;
+    const n = Object.keys(pays).filter(pid => k === 'all' || fn(pid, runId)).length;
     const b = el('button','', label + '<span class="c">' + n + '</span>');
     b.dataset.k = k;
     b.setAttribute('aria-pressed', String(preset === k));

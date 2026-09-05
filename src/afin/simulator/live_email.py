@@ -26,6 +26,7 @@ from afin.domain.models import PaymentSnapshot, ProviderOutcome
 from afin.policy.authorization import AuthorizedAction
 from afin.simulator.razorpay_sim import RazorpaySimulator
 from afin.tools import paylink
+from afin.policy.content import evaluate_message
 from afin.tools.notify import Message, Notifier
 
 
