@@ -643,7 +643,8 @@ body::before{
 
 /* live panel */
 .livelink{color:var(--good)!important;font-weight:600}
-.livebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 16px}
+.livebar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:20px 0 16px}
+.field{display:inline-flex;align-items:center;gap:8px}
 .runbtn{font-family:var(--mono);font-size:12.5px;font-weight:600;padding:8px 18px;border-radius:var(--radius);
   border:1px solid var(--good);background:var(--good);color:var(--surface);cursor:pointer;
   transition:filter 140ms ease,transform 90ms ease}
@@ -702,16 +703,17 @@ body::before{
   border:1px solid var(--good);background:var(--good);color:var(--surface)}
 .paybtn:hover{filter:brightness(1.08)}
 .lvtrace{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
-  padding:12px 14px}
-.lvtrace .th{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);
-  font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
-  margin-bottom:9px}
-.spans{display:grid;gap:4px;max-height:230px;overflow-y:auto}
+  padding:14px 16px;margin-top:18px}
+.lvtrace .th{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:11px}
+.spans{display:grid;gap:5px;max-height:460px;overflow-y:auto}
 .spans .empty{font-size:11.5px;color:var(--muted)}
 details.sp{border:1px solid var(--line-soft);border-left:2px solid var(--line);border-radius:3px;
   background:var(--surface-2)}
-details.sp summary{list-style:none;cursor:pointer;padding:6px 9px;display:flex;
-  justify-content:space-between;gap:8px;align-items:baseline;font-family:var(--mono);font-size:11px}
+details.sp summary{list-style:none;cursor:pointer;padding:8px 12px;display:flex;
+  justify-content:space-between;gap:12px;align-items:baseline;font-family:var(--mono);
+  font-size:12px}
 details.sp summary::-webkit-details-marker{display:none}
 details.sp summary:hover{background:var(--surface)}
 details.sp .nm{font-weight:600;overflow-wrap:anywhere}
@@ -721,12 +723,15 @@ details.sp.tool{border-left-color:var(--good)}
 details.sp.provider{border-left-color:var(--warn)}
 details.sp.orchestration{border-left-color:var(--muted)}
 details.sp.err{border-left-color:var(--crit)}
-.spbody{padding:2px 9px 9px;font-family:var(--mono);font-size:10.5px;display:grid;gap:2px}
-.spbody .lbl{color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:9px;
-  margin-top:5px}
-.spbody .kv{display:flex;gap:7px}
-.spbody .kv b{font-weight:500;color:var(--muted);min-width:104px;flex-shrink:0}
-.spbody .kv span{color:var(--ink-2);overflow-wrap:anywhere}
+.spbody{padding:2px 12px 11px;font-family:var(--mono);font-size:11.5px;display:grid;gap:3px}
+.spbody .lbl{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:9.5px;
+  margin-top:9px;padding-top:7px;border-top:1px solid var(--line-soft)}
+.spbody .kv{display:grid;grid-template-columns:196px minmax(0,1fr);gap:14px;
+  padding:2px 0;align-items:baseline}
+@media (max-width:700px){.spbody .kv{grid-template-columns:1fr;gap:1px}}
+.spbody .kv b{font-weight:500;color:var(--muted)}
+.spbody .kv span{color:var(--ink-2);white-space:pre-wrap;word-break:normal;
+  overflow-wrap:break-word}
 .modenote{border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:var(--radius);
   background:var(--surface);padding:11px 15px;margin-bottom:14px;font-size:13px;color:var(--ink-2)}
 .modenote b{color:var(--ink)}
@@ -807,18 +812,18 @@ footer code{font-family:var(--mono)}
   what policy authorises — writing every step to the append-only ledger as it goes.</p>
 
   <div class="livebar">
-    <label class="ctl" for="lvscenario">Risk</label>
-    <select id="lvscenario"></select>
-    <label class="ctl" for="lvchannel">Channel</label>
+    <span class="field"><label class="ctl" for="lvscenario">Risk</label>
+    <select id="lvscenario"></select></span>
+    <span class="field"><label class="ctl" for="lvchannel">Channel</label>
     <select id="lvchannel">
       <option value="email">Real email — you get it, you pay it</option>
       <option value="simulated">Simulated customer — no email sent</option>
-    </select>
-    <label class="ctl" for="lvreasoner">Agent</label>
+    </select></span>
+    <span class="field"><label class="ctl" for="lvreasoner">Agent</label>
     <select id="lvreasoner">
       <option value="rules">Deterministic rules (no model)</option>
       <option value="llm">LLM agent (gpt-5.4-mini)</option>
-    </select>
+    </select></span>
     <button id="lvrun" class="runbtn">Detect &amp; recover</button>
     <span class="apistate" id="lvstate">checking API…</span>
   </div>
@@ -831,25 +836,26 @@ footer code{font-family:var(--mono)}
       Stages appear here as they happen.</div>
     </div>
     <aside class="lvside">
-      <div class="lvtrace">
-        <div class="th">
-          <span>Execution trace</span>
-          <span id="lvtracesum">—</span>
-        </div>
-        <div class="spans" id="lvspans"></div>
-      </div>
       <div class="lvmeter">
         <div class="k" id="lvrisklab">At risk</div><div class="v" id="lvrisk">—</div>
         <div class="k" style="margin-top:12px">Recovered</div>
         <div class="v good" id="lvrec">—</div>
         <div class="lvtrack"><i id="lvbar"></i></div>
       </div>
-      <div class="lvfacts" id="lvfacts"></div>
+      <div class="lvfacts" id="lvfacts" hidden></div>
       <div class="lvinv" id="lvinv">
         <span class="z" id="lvunsafe">0</span>
         <span class="l">unsafe actions executed<br>this run</span>
       </div>
     </aside>
+  </div>
+
+  <div class="lvtrace">
+    <div class="th">
+      <span>Execution trace — every call the run made</span>
+      <span id="lvtracesum">—</span>
+    </div>
+    <div class="spans" id="lvspans"></div>
   </div>
 </div></section>
 
@@ -1665,6 +1671,7 @@ function lvAdd(cls, kind, main, detail, right){
 function lvFacts(rows){
   const f = document.getElementById('lvfacts');
   f.innerHTML = rows.map(([k, v]) => '<span>' + k + '<b>' + v + '</b></span>').join('');
+  f.hidden = rows.length === 0;   // an empty panel is a rendering artefact, not content
 }
 
 async function checkApi(){
