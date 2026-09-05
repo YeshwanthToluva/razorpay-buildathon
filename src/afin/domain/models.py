@@ -43,6 +43,10 @@ def format_minor(amount_minor: int, currency: str = "INR") -> str:
 class CustomerSnapshot:
     id: str
     segment: str
+    #: Where a communication action would actually go. Carried on the snapshot
+    #: so the policy engine can check the recipient before anything is sent,
+    #: rather than trusting a tool to check it afterwards.
+    email: str
     opted_out: bool
     preferred_channel: Channel
     lifetime_payments: int

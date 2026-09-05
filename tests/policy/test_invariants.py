@@ -155,14 +155,16 @@ def _rules_triggered_by_a_broad_sweep() -> set[PolicyRule]:
         {"risk_type": RiskType.CHECKOUT_ABANDONMENT,
          "failure_category": FailureCategory.CHECKOUT_DROPPED},
     ]
-    for kw, action, delay, opted, pid in itertools.product(
-        states, list(ActionType) + ["WIRE_FUNDS"], DELAYS, [False, True], ["pay_0001", "pay_X"]
+    emails = ["cust_0001@synthetic.invalid", "stranger@elsewhere.invalid"]
+    for kw, action, delay, opted, pid, email in itertools.product(
+        states, list(ActionType) + ["WIRE_FUNDS"], DELAYS, [False, True],
+        ["pay_0001", "pay_X"], emails,
     ):
         d = evaluate(
             request(
                 proposal=propose(action=action, payment_id=pid, scheduled_delay_hours=delay),
                 payment=make_payment(**kw),
-                customer=make_customer(opted_out=opted),
+                customer=make_customer(opted_out=opted, email=email),
             )
         )
         seen.add(d.policy)

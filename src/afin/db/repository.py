@@ -45,6 +45,7 @@ def _to_payment(row) -> PaymentSnapshot:
 def _to_customer(row) -> CustomerSnapshot:
     return CustomerSnapshot(
         id=row.id,
+        email=getattr(row, 'email', '') or '',
         segment=row.segment,
         opted_out=row.opted_out,
         preferred_channel=Channel(row.preferred_channel),

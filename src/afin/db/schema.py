@@ -40,6 +40,7 @@ customers = Table(
     metadata,
     Column("id", String(32), nullable=False),
     Column("dataset_version", String(128), ForeignKey("datasets.dataset_version"), nullable=False),
+    Column("email", String(160), nullable=False),
     Column("segment", String(32), nullable=False),
     Column("opted_out", Boolean, nullable=False, default=False),
     Column("preferred_channel", String(16), nullable=False),
@@ -184,6 +185,7 @@ ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_prior_successful_payme
 ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS claimed_last_attempt_outcome VARCHAR(16);
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS risk_type VARCHAR(32) NOT NULL DEFAULT 'PAYMENT_FAILURE';
 ALTER TABLE payments ALTER COLUMN failure_category TYPE VARCHAR(48);
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS email VARCHAR(160) NOT NULL DEFAULT '';
 -- Widened in place for experiment 002e: prompt version names outgrew 32 chars.
 -- Widening a varchar never rewrites or loses data.
 ALTER TABLE runs ALTER COLUMN prompt_version TYPE VARCHAR(64);

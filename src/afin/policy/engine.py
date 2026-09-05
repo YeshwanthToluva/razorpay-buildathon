@@ -168,6 +168,33 @@ def _rule_opt_out(r: PolicyRequest) -> PolicyDecision | None:
     return None
 
 
+def _rule_recipient_allowlist(r: PolicyRequest) -> PolicyDecision | None:
+    """Who an outbound message may actually be delivered to.
+
+    This lives in policy rather than in the mail tool on purpose. A tool that
+    checks its own recipients is a convention; a rule the gateway consults
+    before minting authority is a boundary. An empty allowlist denies everyone,
+    so a misconfigured deployment sends nothing rather than everything.
+    """
+    if r.proposal.action_type not in COMMUNICATION_ACTIONS:
+        return None
+    recipient = (r.customer.email or "").strip().lower()
+    if not recipient:
+        return _deny(
+            PolicyRule.RECIPIENT_NOT_ALLOWLISTED,
+            "no address on file for this customer, so nothing can be delivered",
+            RiskLevel.HIGH,
+        )
+    if recipient not in r.config.email_allowlist:
+        return _deny(
+            PolicyRule.RECIPIENT_NOT_ALLOWLISTED,
+            f"{recipient} is not on the delivery allowlist; outbound messages "
+            "may only reach addresses named in AFIN_EMAIL_ALLOWLIST",
+            RiskLevel.CRITICAL,
+        )
+    return None
+
+
 def _rule_recovery_window(r: PolicyRequest) -> PolicyDecision | None:
     if r.now >= r.payment.window_expires_at:
         return _deny(
@@ -311,6 +338,7 @@ RULES = (
     (PolicyRule.DISPUTE_BLOCK, _rule_dispute_block),
     (PolicyRule.FRAUD_HOLD, _rule_fraud_hold),
     (PolicyRule.OPT_OUT_COMMUNICATION, _rule_opt_out),
+    (PolicyRule.RECIPIENT_NOT_ALLOWLISTED, _rule_recipient_allowlist),
     (PolicyRule.RECOVERY_WINDOW_EXPIRED, _rule_recovery_window),
     (PolicyRule.MAX_RETRY_LIMIT, _rule_max_retry),
     (PolicyRule.RETRY_COOLDOWN, _rule_retry_cooldown),

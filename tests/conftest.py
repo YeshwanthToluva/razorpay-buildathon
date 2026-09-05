@@ -22,6 +22,7 @@ NOW = datetime(2026, 3, 1, 12, 0, 0, tzinfo=timezone.utc)
 def make_customer(**overrides) -> CustomerSnapshot:
     base = dict(
         id="cust_0001",
+        email="cust_0001@synthetic.invalid",
         segment="RETAIL",
         opted_out=False,
         preferred_channel=Channel.EMAIL,

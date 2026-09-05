@@ -187,6 +187,7 @@ def generate(seed: int = DEFAULT_SEED, version: str = DATASET_VERSION) -> Genera
                 {
                     "id": cid,
                     "dataset_version": version,
+                    "email": f"{cid}@synthetic.invalid",
                     "segment": rng.choice(["RETAIL", "RETAIL", "SMB", "ENTERPRISE"]),
                     "opted_out": scenario.opted_out,
                     "preferred_channel": (

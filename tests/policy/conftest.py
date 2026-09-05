@@ -2,9 +2,16 @@ from __future__ import annotations
 
 from afin.domain.enums import ActionType
 from afin.domain.models import ProposedAction
-from afin.policy.config import DEFAULT_POLICY_CONFIG, PolicyConfig
+from afin.policy.config import PolicyConfig
 from afin.policy.engine import PolicyRequest
 from tests.conftest import NOW, make_customer, make_payment
+
+#: Pinned so the suite never depends on whatever AFIN_EMAIL_ALLOWLIST happens to
+#: hold on the machine running it. The fixture customer is allowed; anyone else
+#: is not, which is what the allowlist tests rely on.
+TEST_POLICY_CONFIG = PolicyConfig(
+    email_allowlist=("cust_0001@synthetic.invalid",)
+)
 
 
 def propose(action=ActionType.RETRY_PAYMENT, payment_id="pay_0001", **kw) -> ProposedAction:
@@ -23,7 +30,7 @@ def request(
     payment=None,
     customer=None,
     now=NOW,
-    config: PolicyConfig = DEFAULT_POLICY_CONFIG,
+    config: PolicyConfig = TEST_POLICY_CONFIG,
     **payment_kw,
 ) -> PolicyRequest:
     return PolicyRequest(
