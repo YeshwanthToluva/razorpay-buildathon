@@ -219,6 +219,45 @@ def _build_reasoner(req: RecoverRequest):
     return r, r.prompt_version
 
 
+def _span_line(sp) -> str:
+    """One readable line per call, for a terminal someone is watching.
+
+    The trace already goes to the browser and to disk. Neither is visible while
+    a run is happening on a projector, so this is the same information in the
+    place a person is actually looking.
+    """
+    out = sp.output or {}
+    if sp.name == "agent.propose":
+        what = f"{out.get('action')}"
+        if out.get("confidence") is not None:
+            what += f"  conf {out['confidence']}"
+        if not out.get("in_action_space", True):
+            what += "  [OUTSIDE THE ACTION SPACE]"
+    elif sp.name == "agent.compose":
+        what = f"{(out.get('subject') or '(no draft)')!r}"
+    elif sp.name == "policy.content":
+        what = f"{out.get('rule')}" + ("" if out.get("allowed") else "  -> template used")
+    elif sp.name.startswith("policy"):
+        what = f"{out.get('decision', '')} {out.get('rule', '')}".strip()
+    elif sp.name.startswith("tool"):
+        what = ("delivered" if out.get("delivered") else "NOT DELIVERED")
+        if out.get("channel"):
+            what += f" via {out['channel']}"
+    elif sp.name.startswith("provider"):
+        what = f"{out.get('result', '')} {out.get('failure_code') or ''}".strip()
+    else:
+        what = ""
+    if sp.error:
+        what = f"ERROR {sp.error}"
+    ms = "" if sp.duration_ms is None else f"{sp.duration_ms:>8.0f}ms"
+    return (f"  {sp.name:<18}{sp.kind:<9}{ms}  "
+            f"{sp.payment_id or '':<10}{what}")
+
+
+#: Set AFIN_LOG_SPANS=1 to print every model, policy and tool call as it happens.
+LOG_SPANS = os.environ.get("AFIN_LOG_SPANS", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 @app.post("/api/recover")
 async def recover(req: RecoverRequest) -> StreamingResponse:
     """Detect one at-risk payment, decide, and execute a bounded recovery.
@@ -232,6 +271,14 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
         # The orchestrator runs on this same loop, so enqueue directly.
         # Deferring via call_soon_threadsafe reorders the stream: the run's own
         # completion event lands before the stages that produced it.
+        if LOG_SPANS:
+            ev = payload.get("event_type")
+            bits = [str(getattr(ev, "value", ev))]
+            for k in ("proposed_action", "policy_decision", "policy_rule",
+                      "execution_result", "revenue_recovered_minor"):
+                if payload.get(k) not in (None, "", 0):
+                    bits.append(f"{k}={payload[k]}")
+            print(f"[{payload.get('payment_id', '')}] " + "  ".join(bits), flush=True)
         queue.put_nowait(payload)
 
     async def run() -> None:
@@ -241,13 +288,14 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
 
         tracer = tracing.Tracer(
             run_id=run_id,
-            on_span=lambda sp: queue.put_nowait({
+            on_span=lambda sp: (LOG_SPANS and print(_span_line(sp), flush=True),
+                                queue.put_nowait({
                 "event_type": "SPAN", "span_id": sp.span_id, "parent_id": sp.parent_id,
                 "name": sp.name, "kind": sp.kind, "duration_ms": sp.duration_ms,
                 "payment_id": sp.payment_id, "cycle": sp.cycle,
                 "attributes": sp.attributes, "input": sp.input, "output": sp.output,
                 "error": sp.error,
-            }),
+            }))[-1],
         )
         reasoner, prompt_version = _build_reasoner(req)
         ledger = AuditLedger(engine=ENGINE, run_id=run_id)
