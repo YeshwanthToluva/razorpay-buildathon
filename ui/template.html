@@ -1729,7 +1729,10 @@ async function runLive(){
             e.is_owed ? 'Owed to us' : 'Potential sale';
           lvFacts([
             ['payment', e.payment_id],
-            ['risk', e.failure_category],
+            ['risk type', (RISK_LABEL[e.risk_type] || e.risk_type || '—')],
+            ['money', e.is_owed ? 'already owed' : 'potential sale'],
+            ['why unpaid', e.failure_category],
+            ['scenario', (e.scenario || '').replace(/_/g,' ')],
             ['retries used', e.retry_count],
             ['disputed', e.is_disputed],
             ['opted out', e.opted_out],

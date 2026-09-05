@@ -33,7 +33,12 @@ from afin.domain.enums import (
     RiskLevel,
     SAFETY_VALVE_ACTIONS,
 )
-from afin.domain.models import CustomerSnapshot, PaymentSnapshot, ProposedAction
+from afin.domain.models import (
+    CustomerSnapshot,
+    PaymentSnapshot,
+    ProposedAction,
+    format_minor,
+)
 from afin.policy.config import DEFAULT_POLICY_CONFIG, PolicyConfig
 from afin.policy.decisions import PolicyDecision, PolicyRule
 
@@ -288,8 +293,10 @@ def _rule_high_value(r: PolicyRequest) -> PolicyDecision | None:
     if r.payment.amount_minor > r.config.high_value_threshold_minor:
         return _approval(
             PolicyRule.HIGH_VALUE_APPROVAL,
-            f"amount {r.payment.amount_minor} exceeds the automated ceiling of "
-            f"{r.config.high_value_threshold_minor}; human approval required",
+            f"{format_minor(r.payment.amount_minor, r.payment.currency)} exceeds the "
+            f"automated ceiling of "
+            f"{format_minor(r.config.high_value_threshold_minor, r.payment.currency)}, "
+            f"so this needs a person to approve it",
             RiskLevel.HIGH,
         )
     return None

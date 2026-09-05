@@ -28,6 +28,17 @@ from afin.domain.enums import (
 )
 
 
+def format_minor(amount_minor: int, currency: str = "INR") -> str:
+    """Render a minor-unit amount the way a person reads it.
+
+    Money is stored in paise so arithmetic stays exact, but a reason string
+    saying "3803500 exceeds 1000000" is unreadable and invites the conclusion
+    that the engine is wrong. Anything a human will read goes through here.
+    """
+    symbol = "\u20b9" if currency == "INR" else ""
+    return f"{symbol}{amount_minor / 100:,.2f}"
+
+
 @dataclass(frozen=True, slots=True)
 class CustomerSnapshot:
     id: str

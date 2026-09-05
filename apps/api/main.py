@@ -69,6 +69,93 @@ def health() -> dict:
             "fingerprint": DEFAULT_POLICY_CONFIG.fingerprint()}
 
 
+#: What each rule is for, in the language a reviewer speaks. The order and the
+#: identifiers come from the engine itself, so this cannot drift out of step
+#: with what actually runs.
+RULE_INTENT: dict[str, str] = {
+    "UNSUPPORTED_ACTION": "The agent named an operation that does not exist. "
+        "It cannot invent financial actions.",
+    "PAYMENT_MISMATCH": "The agent tried to act on a case it was not given. "
+        "No acting on another customer's payment.",
+    "TERMINAL_STATE": "The case is already closed. Nothing further may happen to it.",
+    "SAFETY_VALVE": "Stopping and asking for a human are always available, so a case "
+        "can never be trapped with no legal exit.",
+    "DISPUTE_BLOCK": "The payment is disputed. No automated recovery until it is resolved.",
+    "FRAUD_HOLD": "There is a fraud signal. No automated recovery pending review.",
+    "OPT_OUT_COMMUNICATION": "The customer opted out of contact, so we may not message "
+        "them. It does not stop us charging a card they already authorised.",
+    "RECOVERY_WINDOW_EXPIRED": "The window for recovering this has closed.",
+    "MAX_RETRY_LIMIT": "The retry budget is spent. Repeated declines damage future "
+        "acceptance with the issuer.",
+    "RETRY_COOLDOWN": "Too soon after the last attempt. Back-to-back retries get refused.",
+    "RISK_TYPE_PRECONDITION": "This kind of risk has no instrument to charge — an "
+        "abandoned checkout never authorised one, and an invoice without a mandate "
+        "cannot be collected automatically.",
+    "ACTION_PRECONDITION": "The action cannot work here, for example re-presenting a "
+        "card that has expired.",
+    "CONTACT_BUDGET": "We have contacted this customer enough. More becomes harassment.",
+    "HIGH_VALUE_APPROVAL": "The amount is above the ceiling for unattended action, so a "
+        "person has to approve it.",
+    "PERMITTED": "Nothing above objected, and the action is explicitly allowed.",
+    "DEFAULT_DENY": "Nothing explicitly permitted it, so it is refused. Anything not "
+        "allowed is denied.",
+}
+
+
+@app.get("/api/policy/rules")
+def policy_rules() -> dict:
+    """The rulebook, in the order the engine actually evaluates it.
+
+    Read straight from afin.policy.engine.RULES rather than restated here, so
+    the published rulebook cannot drift from the one that runs. First refusal
+    wins, which is why the order matters: a payment that is both disputed and
+    past its window reports the dispute.
+    """
+    from afin.policy.decisions import PolicyRule
+    from afin.policy.engine import RULES, _EXPLICITLY_PERMITTED
+
+    cfg = DEFAULT_POLICY_CONFIG
+    ordered = [
+        {
+            "order": i,
+            "rule": rule_id.value,
+            "intent": RULE_INTENT.get(rule_id.value, ""),
+            "outcome": "ALLOW" if rule_id is PolicyRule.SAFETY_VALVE else (
+                "REQUIRE_APPROVAL" if rule_id is PolicyRule.HIGH_VALUE_APPROVAL else "DENY"
+            ),
+        }
+        for i, (rule_id, _fn) in enumerate(RULES, start=1)
+    ]
+    ordered.append({
+        "order": len(RULES) + 1, "rule": PolicyRule.PERMITTED.value,
+        "intent": RULE_INTENT["PERMITTED"], "outcome": "ALLOW",
+    })
+    ordered.append({
+        "order": len(RULES) + 2, "rule": PolicyRule.DEFAULT_DENY.value,
+        "intent": RULE_INTENT["DEFAULT_DENY"], "outcome": "DENY",
+    })
+
+    return {
+        "policy_version": cfg.version,
+        "fingerprint": cfg.fingerprint(),
+        "evaluation": "in order, first refusal wins; anything not explicitly "
+                      "permitted is denied",
+        "thresholds": {
+            "max_retries": cfg.max_retries,
+            "high_value_ceiling": f"\u20b9{cfg.high_value_threshold_minor / 100:,.0f}",
+            "high_value_ceiling_minor": cfg.high_value_threshold_minor,
+            "retry_cooldown_hours": cfg.retry_cooldown_hours,
+            "max_contacts": cfg.max_contacts,
+            "max_schedule_delay_hours": cfg.max_schedule_delay_hours,
+        },
+        "action_space": [a.value for a in ActionType],
+        "explicitly_permitted": sorted(a.value for a in _EXPLICITLY_PERMITTED),
+        "always_available": ["REQUEST_HUMAN_REVIEW", "STOP_RECOVERY"],
+        "rule_count": len(ordered),
+        "rules": ordered,
+    }
+
+
 @app.get("/api/mechanics")
 def mechanics() -> dict:
     """The simulator's published odds, so no outcome in the demo looks arbitrary.
