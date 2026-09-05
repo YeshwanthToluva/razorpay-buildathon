@@ -147,8 +147,13 @@ def rulebook() -> dict:
 
 
 def main() -> None:
+    messages = {}
+    msg_path = pathlib.Path("data/messages/composed.json")
+    if msg_path.exists():
+        messages = json.loads(msg_path.read_text())
+
     console: dict = {"arms": [], "replay": {}, "divergence": {}, "transitions": {},
-                     "rulebook": rulebook()}
+                     "rulebook": rulebook(), "messages": messages}
 
     for run_id, label, note, experiment in ARMS:
         led_path = LEDGER / f"{run_id}.json"
