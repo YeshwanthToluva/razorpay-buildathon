@@ -117,9 +117,8 @@ CONSEQUENCE_UNRECOVERED: dict[RiskType, str] = {
         "otherwise we keep delivering it for free."
     ),
     RiskType.CHECKOUT_ABANDONMENT: (
-        "No sale was made. Nothing was delivered and nothing is owed by either "
-        "side, so the customer simply does not get the product. This is lost "
-        "pipeline, not an unpaid debt."
+        "The revenue is lost. Because nothing was billed, there is no receivable "
+        "to chase afterwards -- this was the only chance to collect it."
     ),
     RiskType.OVERDUE_RECEIVABLE: (
         "The goods or services were already delivered and remain unpaid, so this "
@@ -129,7 +128,7 @@ CONSEQUENCE_UNRECOVERED: dict[RiskType, str] = {
 
 CONSEQUENCE_RECOVERED: dict[RiskType, str] = {
     RiskType.PAYMENT_FAILURE: "The subscription is paid and stays active.",
-    RiskType.CHECKOUT_ABANDONMENT: "The sale completed and the product is delivered.",
+    RiskType.CHECKOUT_ABANDONMENT: "The payment completed and the revenue is collected.",
     RiskType.OVERDUE_RECEIVABLE: "The invoice is settled and clears from receivables.",
 }
 

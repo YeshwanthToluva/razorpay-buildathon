@@ -46,8 +46,9 @@ class RunMetrics:
     run_id: str
     payments_processed: int = 0
     revenue_at_risk_minor: int = 0
-    # Owed vs prospective are different money and must not be summed as one
-    # figure: an abandoned checkout is a lost sale, not an unpaid debt.
+    # All of it is revenue at risk. The split exists because only the owed half
+    # leaves a debt behind when recovery fails, so the two must not be summed
+    # into a single "collectable" figure.
     owed_at_risk_minor: int = 0
     owed_recovered_minor: int = 0
     prospective_at_risk_minor: int = 0

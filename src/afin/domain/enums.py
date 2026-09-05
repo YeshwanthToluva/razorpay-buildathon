@@ -22,16 +22,16 @@ class RiskType(StrEnum):
     OVERDUE_RECEIVABLE = "OVERDUE_RECEIVABLE"
 
 
-#: Money the customer already owes, because something was delivered: a live
-#: subscription, or goods and services already provided. Failing to recover it
-#: is a collections loss, and it leaves an obligation to settle.
+#: Revenue at risk that the customer already owes, because something was
+#: delivered. If recovery fails there is still an obligation, so the case can go
+#: to collections or write-off.
 OWED_RISKS: frozenset[RiskType] = frozenset(
     {RiskType.PAYMENT_FAILURE, RiskType.OVERDUE_RECEIVABLE}
 )
 
-#: Revenue that would only have existed if the sale completed. Nothing was
-#: delivered and nothing is owed, so failing to recover it is a lost sale rather
-#: than a debt. Summing it with owed revenue overstates what is collectable.
+#: Revenue at risk before anything was billed. Recovering it is the same job --
+#: detect, intervene, collect -- but if it fails there is no debt to pursue
+#: afterwards, so it must not be added to the collectable total.
 PROSPECTIVE_RISKS: frozenset[RiskType] = frozenset({RiskType.CHECKOUT_ABANDONMENT})
 
 

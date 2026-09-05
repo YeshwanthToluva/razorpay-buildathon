@@ -1724,14 +1724,14 @@ async function runLive(){
             rupee(e.amount_minor) + ' at risk on ' + e.payment_id,
             'We could not collect it because ' + why + '.' +
             (e.is_owed
-              ? ' This money is <strong>already owed</strong> — something was delivered.'
-              : ' Nothing was delivered and nothing is owed yet: this is a <strong>sale that has not happened</strong>.'));
-          document.getElementById('lvrisklab').textContent =
-            e.is_owed ? 'Owed to us' : 'Potential sale';
+              ? ' It is <strong>already owed</strong> — something was delivered, so if recovery '
+                + 'fails there is still a debt to pursue.'
+              : ' Nothing was billed yet, so <strong>this is the only chance to collect it</strong>.'));
+          document.getElementById('lvrisklab').textContent = 'Revenue at risk';
           lvFacts([
             ['payment', e.payment_id],
             ['risk type', (RISK_LABEL[e.risk_type] || e.risk_type || '—')],
-            ['money', e.is_owed ? 'already owed' : 'potential sale'],
+            ['recourse if it fails', e.is_owed ? 'debt remains' : 'none — collect now'],
             ['why unpaid', e.failure_category],
             ['scenario', (e.scenario || '').replace(/_/g,' ')],
             ['retries used', e.retry_count],
