@@ -158,8 +158,21 @@ def _rule_fraud_hold(r: PolicyRequest) -> PolicyDecision | None:
     return None
 
 
+def _contacts_the_customer(r: PolicyRequest) -> bool:
+    """Whether this action will actually reach the person.
+
+    Normally only the communication actions do. When the deployment has no
+    automated payment rail, a charge attempt is delivered to the customer too,
+    and must clear the same rules.
+    """
+    action = r.proposal.action_type
+    if action in COMMUNICATION_ACTIONS:
+        return True
+    return bool(r.config.contact_is_the_payment_rail and action in FINANCIAL_ACTIONS)
+
+
 def _rule_opt_out(r: PolicyRequest) -> PolicyDecision | None:
-    if r.customer.opted_out and r.proposal.action_type in COMMUNICATION_ACTIONS:
+    if r.customer.opted_out and _contacts_the_customer(r):
         return _deny(
             PolicyRule.OPT_OUT_COMMUNICATION,
             "customer has opted out of recovery communication",
@@ -176,7 +189,7 @@ def _rule_recipient_allowlist(r: PolicyRequest) -> PolicyDecision | None:
     before minting authority is a boundary. An empty allowlist denies everyone,
     so a misconfigured deployment sends nothing rather than everything.
     """
-    if r.proposal.action_type not in COMMUNICATION_ACTIONS:
+    if not _contacts_the_customer(r):
         return None
     recipient = (r.customer.email or "").strip().lower()
     if not recipient:
@@ -305,7 +318,7 @@ def _rule_action_precondition(r: PolicyRequest) -> PolicyDecision | None:
 
 
 def _rule_contact_budget(r: PolicyRequest) -> PolicyDecision | None:
-    if r.proposal.action_type in COMMUNICATION_ACTIONS:
+    if _contacts_the_customer(r):
         if r.payment.contact_count >= r.config.max_contacts:
             return _deny(
                 PolicyRule.CONTACT_BUDGET,

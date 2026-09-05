@@ -16,7 +16,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
 
-from afin.domain.enums import ActionType, COMMUNICATION_ACTIONS, ExecutionResult
+from afin.domain.enums import (
+    ActionType,
+    COMMUNICATION_ACTIONS,
+    ExecutionResult,
+    FINANCIAL_ACTIONS,
+)
 from afin.domain.models import PaymentSnapshot, ProviderOutcome
 from afin.policy.authorization import AuthorizedAction
 from afin.simulator.razorpay_sim import RazorpaySimulator
@@ -61,8 +66,8 @@ class LiveEmailProvider:
         self, authorized: AuthorizedAction, payment: PaymentSnapshot, now: datetime
     ) -> ProviderOutcome:
         action = authorized.action
-        if action not in COMMUNICATION_ACTIONS:
-            # Charging is always simulated. No real money moves in this project.
+        if action not in COMMUNICATION_ACTIONS | FINANCIAL_ACTIONS:
+            # Stopping and escalating touch nobody.
             return self.simulator.execute(authorized, payment, now)
 
         recipient = self.demo_recipient or ""
@@ -86,17 +91,36 @@ class LiveEmailProvider:
         url = f"{self.pay_base_url.rstrip('/')}/pay/{link.token}"
         reason = REASON_TEXT.get(payment.failure_category.value, "the payment could not be collected")
 
-        subject = (
-            f"Action needed: {_rupees(payment.amount_minor)} outstanding on {payment.invoice_id}"
-            if action is ActionType.GENERATE_PAYMENT_LINK
-            else f"Reminder: {_rupees(payment.amount_minor)} outstanding on {payment.invoice_id}"
-        )
+        # What the agent decided to do, said the way the customer would hear it.
+        INTENT = {
+            ActionType.RETRY_PAYMENT: (
+                f"We are attempting to collect {_rupees(payment.amount_minor)} again now",
+                "We are re-presenting the payment on your existing method. If it does not "
+                "go through, you can settle it directly using the button below.",
+            ),
+            ActionType.SCHEDULE_RETRY: (
+                f"We will retry {_rupees(payment.amount_minor)} shortly",
+                "We have scheduled another attempt on your existing payment method. You do "
+                "not need to wait for it — you can settle it right now instead.",
+            ),
+            ActionType.GENERATE_PAYMENT_LINK: (
+                f"Action needed: {_rupees(payment.amount_minor)} outstanding",
+                "Your existing payment method cannot be used, so please settle this with "
+                "another method.",
+            ),
+            ActionType.SEND_PAYMENT_REMINDER: (
+                f"Reminder: {_rupees(payment.amount_minor)} outstanding",
+                "This payment is still outstanding. You can settle it below.",
+            ),
+        }
+        headline, explain = INTENT[action]
+        subject = f"{headline} — invoice {payment.invoice_id}"
         body = (
             "<div style='font-family:system-ui,-apple-system,Segoe UI,sans-serif;"
             "max-width:540px;color:#14201e;line-height:1.55'>"
             f"<p>We were unable to collect <strong>{_rupees(payment.amount_minor)}</strong> "
             f"for invoice <code>{payment.invoice_id}</code>, because {reason}.</p>"
-            "<p>You can settle it here:</p>"
+            f"<p>{explain}</p>"
             f"<p style='margin:24px 0'><a href='{url}' style='background:#0d7d78;color:#fff;"
             "padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;"
             f"display:inline-block'>Pay {_rupees(payment.amount_minor)}</a></p>"

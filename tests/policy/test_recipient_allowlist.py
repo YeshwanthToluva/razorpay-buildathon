@@ -103,3 +103,41 @@ def test_opt_out_still_outranks_the_allowlist():
                 customer=make_customer(email=ALLOWED, opted_out=True), config=CONFIG)
     )
     assert d.policy is PolicyRule.OPT_OUT_COMMUNICATION
+
+
+# --- when the human is the payment rail ------------------------------------
+
+LIVE = PolicyConfig(email_allowlist=(ALLOWED,), contact_is_the_payment_rail=True)
+
+
+@pytest.mark.parametrize("action", sorted(FINANCIAL_ACTIONS))
+def test_a_charge_that_reaches_the_customer_obeys_the_allowlist(action):
+    """With no automated rail, a retry is delivered to a person and must clear
+    the same rules a message does. Otherwise the live channel would contact
+    someone policy believed it was silently charging."""
+    d = evaluate(
+        request(proposal=propose(action=action, scheduled_delay_hours=24),
+                customer=make_customer(email="stranger@elsewhere.invalid"),
+                config=LIVE)
+    )
+    assert d.allowed is False
+    assert d.policy is PolicyRule.RECIPIENT_NOT_ALLOWLISTED
+
+
+@pytest.mark.parametrize("action", sorted(FINANCIAL_ACTIONS))
+def test_a_charge_that_reaches_an_opted_out_customer_is_refused(action):
+    d = evaluate(
+        request(proposal=propose(action=action, scheduled_delay_hours=24),
+                customer=make_customer(email=ALLOWED, opted_out=True), config=LIVE)
+    )
+    assert d.allowed is False
+    assert d.policy is PolicyRule.OPT_OUT_COMMUNICATION
+
+
+def test_the_normal_rail_still_allows_silent_charging():
+    """Without the live channel, opting out of contact does not stop a retry."""
+    d = evaluate(
+        request(proposal=propose(action=ActionType.RETRY_PAYMENT),
+                customer=make_customer(email=ALLOWED, opted_out=True), config=CONFIG)
+    )
+    assert d.allowed is True

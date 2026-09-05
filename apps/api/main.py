@@ -277,6 +277,12 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
         })
 
         live = req.channel == "email"
+        import dataclasses as _dc
+
+        cfg = (
+            _dc.replace(DEFAULT_POLICY_CONFIG, contact_is_the_payment_rail=True)
+            if live else DEFAULT_POLICY_CONFIG
+        )
         if live:
             def announce(link, pay):
                 queue.put_nowait({
@@ -297,7 +303,7 @@ async def recover(req: RecoverRequest) -> StreamingResponse:
 
         orch = Orchestrator(
             engine=ENGINE, reasoner=reasoner, provider=provider,
-            ledger=ledger, config=DEFAULT_POLICY_CONFIG, now=EPOCH,
+            ledger=ledger, config=cfg, now=EPOCH,
             dataset_version=dataset, observer=observe,
             # One cycle in email mode: the case pauses on the customer, it does
             # not keep messaging them while they decide.

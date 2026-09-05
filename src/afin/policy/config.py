@@ -33,6 +33,13 @@ class PolicyConfig:
     #: system may not send to anyone, which is the safe default: a misconfigured
     #: deployment sends nothing rather than everything.
     email_allowlist: tuple[str, ...] = ()
+    #: True when there is no automated payment rail and every collection attempt
+    #: reaches the customer directly. Charging actions then have to satisfy the
+    #: communication rules as well -- opt-out, allowlist, contact budget --
+    #: because they now involve contacting a person. Without this the live
+    #: channel would message an opted-out customer while policy believed it was
+    #: silently re-presenting a card.
+    contact_is_the_payment_rail: bool = False
     version: str = POLICY_VERSION
 
     def fingerprint(self) -> str:
