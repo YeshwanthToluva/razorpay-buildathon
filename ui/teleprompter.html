@@ -77,6 +77,21 @@ body.short [data-opt]{display:none}
 .shot td:first-child{color:var(--dim);white-space:nowrap;width:1%}
 .shot .k{color:var(--warn)}
 .shot .v{color:var(--accent);font-weight:600}
+.step{counter-reset:st;margin:.2em 0 0;padding:0;list-style:none}
+.step li{counter-increment:st;position:relative;padding:.3em 0 .3em 2.1em}
+.step li::before{content:counter(st);position:absolute;left:0;top:.34em;width:1.45em;height:1.45em;
+  border-radius:50%;background:var(--accent);color:#06120e;font-weight:700;font-size:.82em;
+  display:flex;align-items:center;justify-content:center}
+.ex{display:grid;grid-template-columns:1fr 1fr;gap:1.1em;margin:.5em 0 0}
+.ex .h{font-size:.9em;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4em}
+.ex .h.a{color:var(--accent)}
+.ex p{margin:0 0 .5em;font-size:1em;line-height:1.55}
+.ex .tip{border-left:2px solid var(--accent);padding-left:.6em}
+.ex .tmpl{color:var(--dim)}
+.rej{border:1px solid rgba(240,162,74,.45);background:rgba(240,162,74,.07);
+  border-radius:6px;padding:.7em .9em;margin-top:.6em}
+.rej .lab{color:var(--warn);font-weight:700;margin-bottom:.35em}
+.rej s{color:var(--dim)}
 #est{font-size:.4em;line-height:1.5;color:var(--dim);font-family:var(--mono);
   border:1px solid var(--line);border-radius:6px;padding:.7em .95em;margin:0 0 1.6em;letter-spacing:0}
 #est b{color:var(--accent)}
@@ -226,6 +241,24 @@ provider without the object that only the policy can produce.</p>
 <b>Knowing something is never permission to do it.</b></p>
 
 <h2>03 · Live run<span class="t">~2m · the demo</span></h2>
+<div class="shot">
+  <h3>Take 1 — click by click</h3>
+  <ol class="step">
+    <li>RISK → <span class="v">failed_retry_then_recovery</span> ·
+        CHANNEL → <span class="v">Real email</span> ·
+        AGENT → <span class="v">Reasoning agent</span></li>
+    <li>Press <b>Detect &amp; recover</b>. Stop talking. Let stage 1 and 2 land.</li>
+    <li>Stage 3 is the policy verdict — <b>read the rule name off the screen out loud.</b></li>
+    <li>Stage 4 is the agent writing the mail, and the content policy ruling on it.</li>
+    <li>Stage 5 — switch to Gmail. <b>Show the email actually sitting in the inbox.</b></li>
+    <li>Click the pay button in the mail. Pay on the page that opens.</li>
+    <li>Switch back. The run is still open, waiting — now it closes:
+        <span class="k">Collected ₹1,776</span>, and the receipt arrives.</li>
+    <li>Open <b>EXECUTION TRACE</b> at the bottom: model call, policy call, tool call,
+        each with its input, output and duration.</li>
+  </ol>
+</div>
+
 <p class="cue">[RISK = failed_retry_then_recovery (pay_0042, ₹1,776) · CHANNEL = Real email ·
 AGENT = Reasoning agent → press Detect &amp; recover. Narrate the stages as they land.
 If it lags, stop talking and let it land.]</p>
@@ -285,6 +318,24 @@ Fraud hold, <span class="num">5</span>.</p>
 <p class="cue">[Screen: chapter 02 — the message comparison, template on the left, agent on the right.]</p>
 <p>Now — if the policy engine is that strict, why have an agent at all?</p>
 <p>Here is the same failed payment, written two ways.</p>
+<div class="shot">
+  <h3>on screen · inv_0042 · ₹1,776 · 9 lifetime payments, 5 successful</h3>
+  <div class="ex">
+    <div>
+      <div class="h">A rule set can only send this</div>
+      <p class="tmpl">We were unable to collect Rs 1,776.00 for invoice inv_0042, because your
+      bank declined the payment. You can settle it using the link below.</p>
+    </div>
+    <div>
+      <div class="h a">The agent wrote this</div>
+      <p>We couldn't collect Rs 1,776.00 for invoice inv_0042 because the payment attempt
+      was declined.</p>
+      <p><b>This was the first attempt, and a second try often goes through.</b> If your card
+      has expired or been replaced, please use a different payment method.</p>
+      <p class="tip">If you have any questions, just reply here and we'll help.</p>
+    </div>
+  </div>
+</div>
 <p>The rule set: <em>“We were unable to collect one thousand seven hundred and seventy six rupees
 for invoice inv double-oh forty-two, because your bank declined the payment.”</em>
 Correct. Mechanical. Identical for every customer who ever hits that code.</p>
@@ -293,8 +344,24 @@ goes through</b>. It offers a way out if the card was replaced. It invites a rep
 <p data-opt="1">That is the line a template cannot write, because <b>a template does not know which case
 it is in.</b> Nine lifetime payments, five successful, one decline. That is not a debtor —
 that is a good customer with a bank that hiccupped, and the message should sound like it.</p>
+<p class="cue">[Scroll to the third message on that page — the refused one.]</p>
+<p>And here is why the second boundary exists.</p>
+<p>Same agent, an <b>abandoned checkout</b> — a customer who left before paying,
+so <b>nothing was ever authorised and no card exists.</b></p>
+<p>The agent wrote: <em>“The card on file appears to be unavailable for this charge.”</em></p>
+<div class="shot">
+  <div class="rej">
+    <div class="lab">content policy · REFUSED · CONTRADICTS_THE_CASE</div>
+    <s>The card on file appears to be unavailable for this charge.</s>
+    <div style="margin-top:.45em">the message describes a payment instrument, but nothing was
+    ever authorised on this case, so no card exists and no charge was attempted</div>
+  </div>
+</div>
+<p>There is no card. The model invented one. <b>That message was never sent</b> — the
+deterministic template went instead, and the refusal is on the record.</p>
+<p class="beat">[beat]</p>
 <p><b>The rule set governs what may happen. The agent governs how it reads.</b>
-And the content policy makes the second one safe enough to ship.</p>
+And the content policy is what makes the second one safe enough to ship.</p>
 
 <h2>07 · The honest part<span class="t">~55s · do not skip this</span></h2>
 <p class="cue">[Screen: the docs folder on GitHub, or the experiments list.]</p>
