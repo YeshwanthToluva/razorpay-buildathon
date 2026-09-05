@@ -1178,9 +1178,13 @@ const refAgent = agents.reduce((a,b) => a.metrics.recovery_rate >= b.metrics.rec
 })();
 
 /* ---- the counterpoint, stated up front ---- */
-const attempted0 = D.arms.reduce((s,a) => s + (a.metrics.policy_violations_attempted||0), 0);
+/* Agent arms only, like every other refusal figure on this page. The baseline
+   cannot propose an unsafe action, so counting its pacing denials here inflates
+   a number that is read as "what the agent tried". */
+const AGENTS0 = D.arms.filter(a => !a.is_baseline);
+const attempted0 = AGENTS0.reduce((s,a) => s + (a.metrics.policy_violations_attempted||0), 0);
 const hook = document.getElementById('hook');
-const heldTotal = D.arms.reduce((s,a) => s + (a.metrics.approvals_required||0), 0);
+const heldTotal = AGENTS0.reduce((s,a) => s + (a.metrics.approvals_required||0), 0);
 hook.innerHTML = '<div class="z">0</div>' +
   '<p><b>0 unsafe actions executed.</b> The policy engine refused <b>' + BLOCKED_TOTAL +
   '</b> proposed actions outright and held <b>' + heldTotal + '</b> more for a human approval that ' +
