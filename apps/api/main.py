@@ -489,7 +489,6 @@ def evaluate_action(probe: PolicyProbe) -> dict:
         reasoning_summary=probe.reasoning_summary,
         confidence=probe.confidence,
         scheduled_delay_hours=probe.scheduled_delay_hours,
-        channel=channel,
     )
     decision, authorized = authorize(
         PolicyRequest(proposal=proposal, payment=payment, customer=customer,
