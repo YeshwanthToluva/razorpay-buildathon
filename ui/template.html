@@ -626,9 +626,32 @@ body::before{
   font-size:11px;color:var(--muted);line-height:1.5}
 .archfoot code{font-family:var(--mono);font-size:10.5px;color:var(--warn)}
 
-/* the rail draws downward once, then rests */
+/* The rail draws downward once. Then a proposal keeps travelling it: a pulse
+   runs top to bottom on a fixed period, and each node lights as the pulse
+   reaches it. It is not decoration -- it is the claim the diagram makes, that
+   nothing gets to the provider except by moving through the boundary, restated
+   every few seconds. --flowT is the period; the node delays are its fifths. */
+.flow{--flowT:3.6s}
 .flow::before{transform-origin:top;animation:rail 620ms cubic-bezier(.3,.7,.3,1) 80ms both}
 @keyframes rail{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+/* the travelling signal, drawn over the rail */
+.flow::after{content:"";position:absolute;left:2px;top:5px;bottom:9px;width:3.5px;
+  border-radius:2px;pointer-events:none;
+  background:linear-gradient(to bottom,transparent 0%,
+    color-mix(in srgb,var(--accent) 82%,transparent) 42%,
+    var(--accent) 50%,
+    color-mix(in srgb,var(--accent) 82%,transparent) 58%,transparent 100%);
+  background-size:100% 26%;background-repeat:no-repeat;
+  filter:blur(.3px);opacity:.9;
+  animation:flowpulse var(--flowT) cubic-bezier(.45,0,.55,1) 900ms infinite}
+@keyframes flowpulse{
+  0%{background-position:0 -30%;opacity:0}
+  12%{opacity:.95}
+  88%{opacity:.95}
+  100%{background-position:0 130%;opacity:0}
+}
+
 .flow li{animation:node 380ms ease-out both}
 .flow li:nth-child(1){animation-delay:140ms}
 .flow li:nth-child(2){animation-delay:230ms}
@@ -636,8 +659,36 @@ body::before{
 .flow li:nth-child(4){animation-delay:380ms}
 .flow li:nth-child(5){animation-delay:440ms}
 @keyframes node{from{opacity:.62;transform:translateX(-3px)}to{opacity:1;transform:none}}
+
+/* each dot lights as the pulse passes it, then hands off to the next */
+.flow li::before{animation:dot var(--flowT) ease-in-out 900ms infinite}
+.flow li:nth-child(1)::before{animation-delay:900ms}
+.flow li:nth-child(2)::before{animation-delay:1620ms}
+.flow li:nth-child(3)::before{animation-delay:2340ms}
+.flow li:nth-child(4)::before{animation-delay:3060ms}
+.flow li:nth-child(5)::before{animation-delay:3780ms}
+@keyframes dot{
+  0%,100%{background:var(--line);box-shadow:0 0 0 3px var(--bg)}
+  6%{background:var(--accent);box-shadow:0 0 0 3px var(--bg),0 0 9px 1px var(--accent)}
+  22%{background:var(--line);box-shadow:0 0 0 3px var(--bg)}
+}
+/* the boundary and the record keep their own colour at rest */
+.flow li.boundary::before{animation-name:dotb}
+@keyframes dotb{
+  0%,100%{background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
+  6%{background:var(--accent);box-shadow:0 0 0 3px var(--bg),0 0 13px 2px var(--accent)}
+  22%{background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
+}
+.flow li.end::before{animation-name:dote}
+@keyframes dote{
+  0%,100%{background:var(--good);box-shadow:0 0 0 3px var(--bg)}
+  6%{background:var(--good);box-shadow:0 0 0 3px var(--bg),0 0 11px 2px var(--good)}
+  22%{background:var(--good);box-shadow:0 0 0 3px var(--bg)}
+}
+
 @media (prefers-reduced-motion:reduce){
-  .flow::before,.flow li{animation:none}
+  .flow::before,.flow li,.flow::after,.flow li::before{animation:none}
+  .flow::after{display:none}
 }
 
 
