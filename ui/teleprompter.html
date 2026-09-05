@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teleprompter — Revenue Recovery Lab</title>
+<style>
+:root{
+  --bg:#070b0a; --ink:#eaf2ef; --dim:#7f938d; --accent:#31d0a5; --warn:#f0a24a;
+  --line:#1c2726; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  --size:52px; --lead:1.45;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+
+/* ---- the reading line: where your eyes stay ---- */
+#guide{position:fixed;left:0;right:0;top:34%;z-index:5;pointer-events:none;
+  border-top:1px solid rgba(49,208,165,.22)}
+#guide::before,#guide::after{content:'';position:absolute;top:-7px;
+  border:7px solid transparent;border-top-color:var(--accent);opacity:.55}
+#guide::before{left:0} #guide::after{right:0}
+body.noguide #guide{display:none}
+
+/* top and bottom fade so lines enter and leave softly */
+.fade{position:fixed;left:0;right:0;height:16vh;z-index:4;pointer-events:none}
+.fade.t{top:0;background:linear-gradient(var(--bg),transparent)}
+.fade.b{bottom:0;background:linear-gradient(transparent,var(--bg))}
+
+#stage{position:absolute;left:0;right:0;top:0;will-change:transform}
+#script{max-width:1500px;margin:0 auto;padding:34vh 7vw 90vh;
+  font-size:var(--size);line-height:var(--lead);font-weight:450;letter-spacing:-.01em}
+body.mirror #stage{transform-origin:center center}
+body.mirror #script{transform:scaleX(-1)}
+body.flip #script{transform:scaleY(-1)}
+body.mirror.flip #script{transform:scale(-1,-1)}
+
+h2{font-size:.42em;line-height:1.25;margin:1.5em 0 .55em;color:var(--accent);
+  font-family:var(--mono);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+h2:first-child{margin-top:0}
+h2 .t{color:var(--dim);font-weight:400;margin-left:.8em;letter-spacing:.02em;text-transform:none}
+p{margin:0 0 .62em}
+p.cue{font-size:.44em;line-height:1.4;color:var(--warn);font-family:var(--mono);
+  border-left:3px solid rgba(240,162,74,.4);padding-left:.9em;margin:.7em 0 1em;letter-spacing:0}
+p.beat{color:var(--dim);font-style:italic}
+b{color:#fff;font-weight:650}
+em{font-style:normal;color:var(--accent);font-weight:600}
+.num{font-family:var(--mono);color:var(--accent);font-weight:600;letter-spacing:-.02em}
+hr{border:0;border-top:1px solid var(--line);margin:1.4em 0}
+
+/* ---- controls ---- */
+#bar{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:18px;
+  padding:11px 18px;background:rgba(7,11,10,.94);border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:12px;color:var(--dim);
+  transition:opacity .25s, transform .25s}
+body.hidebar #bar{opacity:0;transform:translateY(100%)}
+#bar b{color:var(--ink);font-weight:600}
+#bar .sep{width:1px;height:18px;background:var(--line)}
+button{font-family:var(--mono);font-size:12px;background:#101a18;color:var(--ink);
+  border:1px solid var(--line);border-radius:5px;padding:5px 11px;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.on{background:var(--accent);color:#06120e;border-color:var(--accent);font-weight:700}
+#play{min-width:104px;font-weight:700}
+#prog{position:fixed;bottom:0;left:0;height:2px;background:var(--accent);z-index:21;width:0}
+.pill{font-variant-numeric:tabular-nums}
+#big{font-size:15px;color:var(--ink)}
+#sect{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)}
+
+body.short [data-opt]{display:none}
+.shot{font-size:.4em;line-height:1.6;font-family:var(--mono);letter-spacing:0;
+  border:1px solid var(--line);border-radius:8px;padding:1em 1.2em;margin:0 0 1.1em}
+.shot h3{margin:0 0 .5em;font-size:1em;color:var(--accent);text-transform:uppercase;
+  letter-spacing:.06em}
+.shot table{border-collapse:collapse;width:100%}
+.shot td{padding:.22em .7em .22em 0;vertical-align:top;color:var(--ink)}
+.shot td:first-child{color:var(--dim);white-space:nowrap;width:1%}
+.shot .k{color:var(--warn)}
+.shot .v{color:var(--accent);font-weight:600}
+#est{font-size:.4em;line-height:1.5;color:var(--dim);font-family:var(--mono);
+  border:1px solid var(--line);border-radius:6px;padding:.7em .95em;margin:0 0 1.6em;letter-spacing:0}
+#est b{color:var(--accent)}
+#help{position:fixed;inset:0;z-index:40;background:rgba(4,7,7,.96);display:none;
+  align-items:center;justify-content:center;padding:6vh 5vw}
+#help.show{display:flex}
+#help div{font-family:var(--mono);font-size:15px;line-height:2.1;max-width:640px}
+#help span{display:inline-block;min-width:132px;color:var(--accent)}
+</style>
+</head>
+<body class="hidebar">
+
+<div class="fade t"></div>
+<div class="fade b"></div>
+<div id="guide"></div>
+
+<div id="stage"><div id="script">
+
+<h2>SHOT LIST<span class="t">set up before you hit record · not spoken</span></h2>
+<div class="shot">
+  <h3>Before you start</h3>
+  <table>
+    <tr><td>API</td><td>restart uvicorn on :8000 — it must be running the current code</td></tr>
+    <tr><td>Site</td><td>localhost:3000 · <b>hard reload</b> (Ctrl+Shift+R)</td></tr>
+    <tr><td>Inbox</td><td>Gmail open in a second tab, logged in as nitintoluva@gmail.com</td></tr>
+    <tr><td>Channel</td><td class="v">Real email — you get it, you pay it</td></tr>
+    <tr><td>Agent</td><td class="v">Reasoning agent (gpt-5.4-mini)</td></tr>
+  </table>
+</div>
+
+<div class="shot">
+  <h3>Take 1 — the loop closes · section 03</h3>
+  <table>
+    <tr><td>RISK</td><td class="v">failed_retry_then_recovery</td></tr>
+    <tr><td>case</td><td>pay_0042 · <span class="k">₹1,776</span> · insufficient funds · 1 retry already used</td></tr>
+    <tr><td>expect</td><td>every action ALLOWED → agent acts → <b>real email arrives</b> →
+        you click Pay → case closes as <span class="k">Collected ₹1,776</span></td></tr>
+    <tr><td>why this</td><td>it is the same case as the message comparison in chapter 02 —
+        the one already on the site</td></tr>
+  </table>
+</div>
+
+<div class="shot">
+  <h3>Take 2 — the boundary refuses · section 05</h3>
+  <table>
+    <tr><td>RISK</td><td class="v">possible_fraud</td></tr>
+    <tr><td>case</td><td>pay_0027 · ₹8,459 · fraud suspected</td></tr>
+    <tr><td>expect</td><td><span class="k">FRAUD_HOLD</span> on every action the agent can pick.
+        No email is sent. Nothing executes.</td></tr>
+    <tr><td>or</td><td class="v">customer_opt_out</td></tr>
+    <tr><td></td><td>pay_0030 · ₹2,401 · <span class="k">OPT_OUT_COMMUNICATION</span> —
+        stronger line: the customer said don't contact me, and in live mode that blocks
+        <b>charging them</b> too, not just messaging</td></tr>
+  </table>
+</div>
+
+<div class="shot">
+  <h3>Take 3 — held for a human · optional</h3>
+  <table>
+    <tr><td>RISK</td><td class="v">high_value_transaction</td></tr>
+    <tr><td>case</td><td>pay_0034 · <span class="k">₹38,035</span> · above the ₹10,000 threshold</td></tr>
+    <tr><td>expect</td><td><span class="k">HIGH_VALUE_APPROVAL</span> → NEEDS A HUMAN.
+        At autonomy level 2 no human exists, so it does not execute either.</td></tr>
+  </table>
+</div>
+
+<div class="shot">
+  <h3>Take 4 — grounded, not just bounded · pairs with section 06</h3>
+  <table>
+    <tr><td>RISK</td><td class="v">checkout_abandoned</td></tr>
+    <tr><td>case</td><td>pay_0051 · ₹5,620 · nothing was ever authorised — <b>there is no card</b></td></tr>
+    <tr><td>expect</td><td>retry refused by <span class="k">RISK_TYPE_PRECONDITION</span>;
+        payment link allowed. If the model writes “your card on file”, the content policy
+        refuses it with <span class="k">CONTRADICTS_THE_CASE</span> and the template goes
+        instead — that refusal is the best 10 seconds in the video.</td></tr>
+  </table>
+</div>
+
+<div class="shot">
+  <h3>Do not pick these on camera</h3>
+  <table>
+    <tr><td>customer_dispute</td><td>refuses with TERMINAL_STATE, not DISPUTE_BLOCK —
+        the case is already closed, so it reads as a dead case rather than a boundary</td></tr>
+    <tr><td>recovery_window_expired</td><td>₹518 · correct, but the amount is too small
+        to land on camera</td></tr>
+  </table>
+</div>
+
+<div class="shot">
+  <h3>Every RISK option, and what the policy does to it</h3>
+  <table>
+    <tr><td>transient_bank_failure</td><td>₹5,666 · all allowed</td></tr>
+    <tr><td>insufficient_funds</td><td>₹5,684 · all allowed</td></tr>
+    <tr><td>expired_payment_method</td><td>₹5,518 · retry → ACTION_PRECONDITION; link allowed</td></tr>
+    <tr><td>repeated_payment_failure</td><td>₹7,977 · all allowed</td></tr>
+    <tr><td>customer_dispute</td><td>₹4,287 · TERMINAL_STATE</td></tr>
+    <tr><td>possible_fraud</td><td>₹8,459 · <span class="k">FRAUD_HOLD</span></td></tr>
+    <tr><td>customer_opt_out</td><td>₹2,401 · <span class="k">OPT_OUT_COMMUNICATION</span></td></tr>
+    <tr><td>high_value_transaction</td><td>₹38,035 · <span class="k">HIGH_VALUE_APPROVAL</span></td></tr>
+    <tr><td>successful_retry</td><td>₹5,700 · all allowed</td></tr>
+    <tr><td>failed_retry_then_recovery</td><td>₹1,776 · all allowed ← <b>the demo case</b></td></tr>
+    <tr><td>mandate_revoked</td><td>₹2,077 · retry → ACTION_PRECONDITION; link allowed</td></tr>
+    <tr><td>recovery_window_expired</td><td>₹518 · <span class="k">RECOVERY_WINDOW_EXPIRED</span></td></tr>
+    <tr><td>max_retries_reached</td><td>₹6,975 · retry → <span class="k">MAX_RETRY_LIMIT</span>; link allowed</td></tr>
+    <tr><td>checkout_abandoned</td><td>₹5,620 · retry → RISK_TYPE_PRECONDITION; link allowed</td></tr>
+    <tr><td>checkout_card_declined</td><td>₹7,553 · retry → RISK_TYPE_PRECONDITION; link allowed</td></tr>
+    <tr><td>checkout_abandoned_opted_out</td><td>₹2,084 · OPT_OUT_COMMUNICATION</td></tr>
+    <tr><td>receivable_overdue_with_mandate</td><td>₹7,516 · all allowed</td></tr>
+    <tr><td>receivable_no_mandate</td><td>₹4,815 · retry → RISK_TYPE_PRECONDITION; link allowed</td></tr>
+    <tr><td>receivable_high_value</td><td>₹44,583 · <span class="k">HIGH_VALUE_APPROVAL</span></td></tr>
+  </table>
+</div>
+
+<h2>00 · Cold open<span class="t">~20s · camera on you</span></h2>
+<p class="cue">[Screen: the Live tab, nothing running yet. Sit still. Do not rush this one.]</p>
+<p>A payment fails. A customer walks away from a checkout. An invoice goes past due.</p>
+<p>Every one of those is <b>revenue that already exists</b> and is about to stop existing.</p>
+<p>The obvious fix is to hand it to an AI agent. The obvious problem is that you have just given
+a language model access to <b>money</b>.</p>
+<p class="beat">[beat]</p>
+<p>So we built the agent. And then we spent most of our time trying to prove it could not be trusted.</p>
+
+<h2>01 · What it is<span class="t">~40s</span></h2>
+<p class="cue">[Screen: scroll to “01 How it works”.]</p>
+<p>This is a revenue recovery agent. It detects revenue at risk, decides the right intervention,
+and executes a <b>bounded</b> recovery workflow.</p>
+<p data-opt="1">Three kinds of risk: a failed payment, an abandoned checkout, an overdue receivable.</p>
+<p data-opt="1">Six actions it can take — retry the payment, schedule a retry, generate a payment link,
+send a reminder, request a human, stop recovery. <em>That list is closed.</em>
+If the model invents a seventh, it is rejected before anything else is even considered.</p>
+
+<h2>02 · The one idea<span class="t">~50s · the core of the pitch</span></h2>
+<p class="cue">[Screen: the architecture strip. Slow down here. This is the whole thesis.]</p>
+<p>Here is the only architectural idea that matters.</p>
+<p><b>The model never executes anything.</b> It proposes.</p>
+<p>Between the proposal and the money sits a deterministic policy engine —
+<span class="num">15</span> rules, evaluated in a fixed order, first refusal wins,
+and the list <b>ends in default-deny</b>. Pure functions. No I/O. No model.</p>
+<p>And it is not a convention — it is the <b>type system</b>. The provider that moves money
+will only accept an <em>AuthorizedAction</em>, and an <em>AuthorizedAction</em> can only be
+minted inside the policy module. There is no other constructor.</p>
+<p>If any code tries to build one elsewhere, it does not misbehave — <b>it raises
+PolicyBypassError</b>. You cannot forget to check the policy, because you cannot call the
+provider without the object that only the policy can produce.</p>
+<p class="beat" data-opt="1">[beat]</p>
+<p data-opt="1">Memory is what the agent knows. Policy is what it is allowed to do.
+<b>Knowing something is never permission to do it.</b></p>
+
+<h2>03 · Live run<span class="t">~2m · the demo</span></h2>
+<p class="cue">[RISK = failed_retry_then_recovery (pay_0042, ₹1,776) · CHANNEL = Real email ·
+AGENT = Reasoning agent → press Detect &amp; recover. Narrate the stages as they land.
+If it lags, stop talking and let it land.]</p>
+<p>Let me just run one.</p>
+<p><b>One.</b> It detects the revenue at risk — the amount, why it is unpaid,
+and whether we are already owed the money or about to lose the sale entirely.</p>
+<p><b>Two.</b> The agent decides. That is the model — its diagnosis, its chosen action,
+its confidence.</p>
+<p><b>Three.</b> The policy engine rules on it. Watch this line: it names the exact rule
+and the reason. Allowed, refused, or held for a human.</p>
+<p><b>Four.</b> Now the part I actually want you to see. The agent <b>writes the email itself</b> —
+and everything it writes goes through a <em>second</em> boundary before it can leave.</p>
+<p class="cue">[If the content policy refuses it, the refused draft is on screen struck through — stop and
+point at it. That is the best moment in the demo. If it passes, say the next line instead.]</p>
+<p data-opt="1">A content policy — eight rules over open prose. It refuses a promise nobody authorised.
+It refuses an amount that is not the amount owed. It refuses collections pressure.
+It refuses anything that reads like phishing. It refuses internal jargon leaking into
+a customer's inbox.</p>
+<p><b>Five.</b> A real email leaves — with a real payment link.</p>
+<p class="cue">[Switch to your inbox. Show the mail. Click the link. Pay.]</p>
+<p>I pay it. And the agent closes the loop — it observes the payment, marks the revenue
+recovered, and sends the receipt.</p>
+<p>Notice what it did <b>not</b> do while it was waiting. It did not retry. It did not message
+me again. It did not guess. <b>It parked the case until real money actually arrived.</b></p>
+
+<h2>04 · The tools<span class="t">~35s · Composio</span></h2>
+<p class="cue">[Screen: the trace panel — the tool span. Or the Composio dashboard.]</p>
+<p>The email is real. It goes out over <b>Composio's Gmail MCP tool</b>, on my own connected
+account, over their REST API.</p>
+<p>And this is where most agent demos quietly cheat. A Gmail toolkit can read your mail,
+list your contacts, manage your drafts. <b>Our agent gets exactly one action:</b>
+<em>GMAIL_SEND_EMAIL</em>. One entry in an allowlist. Anything else raises ToolScopeError.</p>
+<p data-opt="1">And the recipient? That is not checked by the mail tool. <b>It is checked by the policy
+engine</b> — because a tool that validates its own recipients is a convention, and a rule the
+gateway consults before minting authority is a boundary.</p>
+
+<h2>05 · The evidence<span class="t">~70s · the strongest section</span></h2>
+<p class="cue">[Screen: Safety tab. Then click a blocked attempt to open the modal.]</p>
+<p>So: does the boundary actually hold? We have receipts.</p>
+<p>Across the runs, the agent proposed <span class="num">137</span> actions that the policy
+engine <b>did not authorise</b>.</p>
+<p><span class="num">113</span> were refused outright. <span class="num">24</span> were high-value
+and held for a human — and at this autonomy level there is no human, so they did not execute
+either.</p>
+<p>Actions that reached the provider without an approval: <b><span class="num">zero</span>.</b>
+Not low. <b>Zero.</b> Every single run.</p>
+<p class="cue">[Click one blocked attempt. The modal re-runs it against the live engine.]</p>
+<p>And these are not screenshots. Click any refusal and it <b>re-runs that exact request against
+the live policy engine right now</b> — the verdict, the deciding rule, the full list of rules
+consulted, and the fact that no AuthorizedAction was ever minted.</p>
+<p data-opt="1">Retry cooldown stopped <span class="num">38</span>. Retry limit, <span class="num">33</span>.
+High value, <span class="num">24</span>. Expired recovery window, <span class="num">21</span>.
+Fraud hold, <span class="num">5</span>.</p>
+<p><b>The agent tried. The rulebook said no. Every time, on the record.</b></p>
+
+<h2>06 · What it does that rules cannot<span class="t">~55s</span></h2>
+<p class="cue">[Screen: chapter 02 — the message comparison, template on the left, agent on the right.]</p>
+<p>Now — if the policy engine is that strict, why have an agent at all?</p>
+<p>Here is the same failed payment, written two ways.</p>
+<p>The rule set: <em>“We were unable to collect one thousand seven hundred and seventy six rupees
+for invoice inv double-oh forty-two, because your bank declined the payment.”</em>
+Correct. Mechanical. Identical for every customer who ever hits that code.</p>
+<p>The agent, on the same case: it says <b>this was the first attempt, and a second try often
+goes through</b>. It offers a way out if the card was replaced. It invites a reply.</p>
+<p data-opt="1">That is the line a template cannot write, because <b>a template does not know which case
+it is in.</b> Nine lifetime payments, five successful, one decline. That is not a debtor —
+that is a good customer with a bank that hiccupped, and the message should sound like it.</p>
+<p><b>The rule set governs what may happen. The agent governs how it reads.</b>
+And the content policy makes the second one safe enough to ship.</p>
+
+<h2>07 · The honest part<span class="t">~55s · do not skip this</span></h2>
+<p class="cue">[Screen: the docs folder on GitHub, or the experiments list.]</p>
+<p>One more thing, and it is the part I would want to hear if I were you.</p>
+<p>We ran <span class="num">21</span> recorded runs and wrote <span class="num">4</span> experiment
+records. Two of them <b>falsified our own hypotheses.</b></p>
+<p>We thought the agent would recover more revenue than a fixed rule set. <b>It did not.</b>
+The rule set won on recovery rate, and we published that.</p>
+<p data-opt="1">We thought the agent was failing because it lacked context. So we gave it perfect context.
+Context fidelity went up sharply. <b>Revenue did not move.</b></p>
+<p>We thought it was failing because it never learned its retries failed. So we fed every outcome
+back. Absorption went from <span class="num">47%</span> to <span class="num">87%</span>.
+Revenue did not move — <b>to the rupee.</b></p>
+<p class="beat" data-opt="1">[beat]</p>
+<p data-opt="1">Two experiments improved what the agent <em>knew</em> and neither moved the outcome.
+That is real evidence that the remaining gap is <b>not an information problem</b> —
+and it is why the next experiment is a different one. That is in the repo too, with the
+negative results kept in.</p>
+
+<h2>08 · Close<span class="t">~30s</span></h2>
+<p class="cue">[Screen: the repo. Then back to camera for the last two lines.]</p>
+<p>Everything is public. The dataset, hash-pinned. The audit ledger, append-only,
+enforced by database triggers. Every execution trace. Every refusal.
+<span class="num">375</span> tests — <span class="num">208</span> of them on the policy engine
+alone, <span class="num">19</span> adversarial tests where a deliberately hostile agent tries
+to get something dangerous past the boundary.</p>
+<p>It never does.</p>
+<p class="beat">[beat]</p>
+<p>So — can an AI agent recover revenue?</p>
+<p><b>It can. But that was never the hard part.</b></p>
+<p>The hard part is building the thing so that when the model is wrong — and it <b>will</b> be
+wrong — <b>being wrong is not the same as being dangerous.</b></p>
+<p>That is what we built. Thank you.</p>
+
+<hr>
+<p class="cue">[END. Stop recording. Backup lines below if you need them for Q&amp;A.]</p>
+
+<h2>Q&amp;A · backup facts<span class="t">not part of the take</span></h2>
+<p class="cue">Data is fully synthetic — no real customer, payment or communication data,
+and no real money moves. The provider is a simulator.</p>
+<p class="cue">Email allowlist is hard-coded to one address and enforced in the policy engine,
+not the mail tool. Empty allowlist denies everyone — a misconfigured deploy sends nothing,
+not everything.</p>
+<p class="cue">Simulator outcomes are a keyed hash of seed, payment, action and attempt —
+so a result never depends on the order cases ran in. Same seed, same answer.</p>
+<p class="cue">Policy config is fingerprinted over the thresholds AND the rule list, so adding
+a rule changes the fingerprint. Every run records the fingerprint it ran under.</p>
+<p class="cue">Two orthogonal state variables: payment_state is financial truth,
+recovery_state is orchestration. Money in the ledger is integer paise, never a float.</p>
+<p class="cue">Autonomy Level 2: model proposes, deterministic policy disposes, no human in the
+loop. Escalation is therefore terminal — which is exactly why the agent's over-escalation
+cost it revenue, and we measured that at 94.6% of the gap.</p>
+
+</div></div>
+
+<div id="prog"></div>
+<div id="bar">
+  <button id="play">▶ PLAY</button>
+  <div class="sep"></div>
+  <span>speed</span><b id="spd" class="pill">— px/s</b>
+  <button data-act="slower">−</button><button data-act="faster">+</button>
+  <div class="sep"></div>
+  <span>size</span><b id="fs" class="pill">—</b>
+  <button data-act="smaller">A−</button><button data-act="bigger">A+</button>
+  <div class="sep"></div>
+  <button data-act="mirror" id="bmirror">MIRROR</button>
+  <button data-act="flip" id="bflip">FLIP</button>
+  <button data-act="guide" id="bguide" class="on">LINE</button>
+  <button data-act="short" id="bshort">SHORT CUT</button>
+  <div class="sep"></div>
+  <button data-act="prev">◀ SEC</button><button data-act="next">SEC ▶</button>
+  <button data-act="top">⤒ TOP</button>
+  <div class="sep"></div>
+  <b id="clock" class="pill">0:00</b>
+  <span id="sect"></span>
+  <button data-act="help">?</button>
+</div>
+
+<div id="help"><div>
+  <span>Space</span> play / pause<br>
+  <span>↑ ↓</span> scroll speed<br>
+  <span>+ −</span> text size<br>
+  <span>← →</span> previous / next section<br>
+  <span>J K</span> nudge up / down one line<br>
+  <span>Home</span> back to the top (resets the clock)<br>
+  <span>M</span> mirror horizontally (teleprompter glass)<br>
+  <span>V</span> flip vertically<br>
+  <span>G</span> reading line on / off<br>
+  <span>H</span> show / hide this control bar<br>
+  <span>F</span> fullscreen<br>
+  <span>? or Esc</span> close this<br><br>
+  <span style="color:var(--dim)">Move the mouse</span> to reveal the bar; it hides while you read.
+</div></div>
+
+<script>
+const stage = document.getElementById('stage');
+const script = document.getElementById('script');
+const body = document.body;
+
+let y = 0, speed = 42, playing = false, last = null, t0 = null, elapsed = 0;
+let size = 52;
+
+const $ = id => document.getElementById(id);
+const maxY = () => Math.max(0, script.scrollHeight - window.innerHeight * 0.34);
+
+function apply(){
+  stage.style.transform = 'translateY(' + (-y) + 'px)';
+  $('prog').style.width = (maxY() ? (y / maxY() * 100) : 0) + '%';
+  const secs = [...script.querySelectorAll('h2')];
+  let cur = secs[0];
+  for(const h of secs){ if(h.offsetTop - y <= window.innerHeight * 0.36) cur = h; }
+  $('sect').textContent = cur ? cur.firstChild.textContent.trim() : '';
+}
+function tick(ts){
+  if(!playing) return;
+  if(last == null) last = ts;
+  const dt = (ts - last) / 1000; last = ts;
+  elapsed += dt;
+  y = Math.min(maxY(), y + speed * dt);
+  if(y >= maxY()) pause();
+  apply(); clock();
+  requestAnimationFrame(tick);
+}
+function play(){ if(playing) return; playing = true; last = null; $('play').textContent = '❚❚ PAUSE';
+  $('play').classList.add('on'); requestAnimationFrame(tick); }
+function pause(){ playing = false; $('play').textContent = '▶ PLAY'; $('play').classList.remove('on'); }
+function toggle(){ playing ? pause() : play(); }
+function clock(){
+  const m = Math.floor(elapsed / 60), s = Math.floor(elapsed % 60);
+  $('clock').textContent = m + ':' + String(s).padStart(2,'0');
+}
+function setSpeed(v){ speed = Math.max(6, Math.min(240, v)); $('spd').textContent = Math.round(speed) + ' px/s'; }
+function setSize(v){
+  size = Math.max(20, Math.min(110, v));
+  document.documentElement.style.setProperty('--size', size + 'px');
+  $('fs').textContent = size + 'px'; apply();
+}
+function jump(dir){
+  const secs = [...script.querySelectorAll('h2')].map(h => Math.max(0, h.offsetTop - window.innerHeight * 0.30));
+  const eps = 4;
+  let target = dir > 0
+    ? secs.find(o => o > y + eps)
+    : [...secs].reverse().find(o => o < y - eps);
+  if(target == null) target = dir > 0 ? maxY() : 0;
+  y = target; apply();
+}
+
+$('play').addEventListener('click', toggle);
+document.querySelectorAll('#bar button[data-act]').forEach(b => {
+  b.addEventListener('click', () => act(b.dataset.act));
+});
+function act(a){
+  if(a === 'faster') setSpeed(speed + 4);
+  else if(a === 'slower') setSpeed(speed - 4);
+  else if(a === 'bigger') setSize(size + 3);
+  else if(a === 'smaller') setSize(size - 3);
+  else if(a === 'mirror'){ body.classList.toggle('mirror'); $('bmirror').classList.toggle('on'); }
+  else if(a === 'flip'){ body.classList.toggle('flip'); $('bflip').classList.toggle('on'); }
+  else if(a === 'guide'){ body.classList.toggle('noguide'); $('bguide').classList.toggle('on'); }
+  else if(a === 'short'){ body.classList.toggle('short'); $('bshort').classList.toggle('on');
+    estimate(); apply(); }
+  else if(a === 'prev') jump(-1);
+  else if(a === 'next') jump(1);
+  else if(a === 'top'){ y = 0; elapsed = 0; clock(); apply(); }
+  else if(a === 'help') $('help').classList.toggle('show');
+}
+
+addEventListener('keydown', ev => {
+  const k = ev.key;
+  if(k === ' '){ ev.preventDefault(); toggle(); }
+  else if(k === 'ArrowUp'){ ev.preventDefault(); setSpeed(speed + 3); }
+  else if(k === 'ArrowDown'){ ev.preventDefault(); setSpeed(speed - 3); }
+  else if(k === 'ArrowRight'){ ev.preventDefault(); jump(1); }
+  else if(k === 'ArrowLeft'){ ev.preventDefault(); jump(-1); }
+  else if(k === '+' || k === '='){ setSize(size + 3); }
+  else if(k === '-' || k === '_'){ setSize(size - 3); }
+  else if(k === 'j' || k === 'J'){ y = Math.max(0, y - size * 1.5); apply(); }
+  else if(k === 'k' || k === 'K'){ y = Math.min(maxY(), y + size * 1.5); apply(); }
+  else if(k === 'Home'){ act('top'); }
+  else if(k === 'm' || k === 'M'){ act('mirror'); }
+  else if(k === 'v' || k === 'V'){ act('flip'); }
+  else if(k === 'g' || k === 'G'){ act('guide'); }
+  else if(k === 's' || k === 'S'){ act('short'); }
+  else if(k === 'h' || k === 'H'){ body.classList.toggle('hidebar'); }
+  else if(k === 'f' || k === 'F'){
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  }
+  else if(k === '?' ) $('help').classList.toggle('show');
+  else if(k === 'Escape') $('help').classList.remove('show');
+});
+$('help').addEventListener('click', () => $('help').classList.remove('show'));
+
+/* the bar gets out of the way while you read, and comes back on any mouse move */
+let hideT = null;
+addEventListener('mousemove', () => {
+  body.classList.remove('hidebar');
+  clearTimeout(hideT);
+  hideT = setTimeout(() => body.classList.add('hidebar'), 2600);
+});
+addEventListener('resize', apply);
+
+/* estimated read time, so you know before you hit record */
+function estimate(){
+  let box = document.getElementById('est');
+  if(!box){ box = document.createElement('p'); box.id = 'est'; script.prepend(box); }
+  const spoken = [...script.querySelectorAll('p, h2')]
+    .filter(n => n.id !== 'est' && !n.classList.contains('cue')
+                 && !n.closest('.shot') && n.textContent.trim() !== 'SHOT LIST'
+                 && !(body.classList.contains('short') && n.hasAttribute('data-opt')))
+    .map(n => n.textContent).join(' ');
+  const words = spoken.trim().split(/\s+/).length;
+  const mins = words / 145;
+  const label = Math.floor(mins) + ':' + String(Math.round((mins % 1) * 60)).padStart(2,'0');
+  box.innerHTML = (body.classList.contains('short') ? '<b>SHORT CUT</b> · ' : '<b>FULL</b> · ') +
+    words + ' spoken words · about <b>' + label + '</b> at a calm 145 wpm · ' +
+    'S switches cut · ? for keys · Space to start';
+  const px = script.scrollHeight - window.innerHeight * 0.34;
+  setSpeed(Math.max(10, Math.min(120, px / (mins * 60))));
+}
+
+setSize(52);
+estimate();
+apply(); clock();
+</script>
+</body>
+</html>
