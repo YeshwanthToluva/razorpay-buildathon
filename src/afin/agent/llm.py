@@ -28,6 +28,8 @@ from agent_framework.openai import (
 )
 
 from afin.agent.prompts import (
+    COMPOSE_SYSTEM,
+    COMPOSE_TEMPLATE,
     SYSTEM_PROMPT,
     SYSTEM_PROMPT_TREATMENT,
     USER_TEMPLATE,
@@ -35,6 +37,7 @@ from afin.agent.prompts import (
 )
 from afin.agent.schema import (
     AgentProposal,
+    MessageDraft,
     InvalidProposal,
     PROMPT_VERSION,
     PROMPT_VERSION_TREATMENT,
@@ -213,6 +216,40 @@ class LLMReasoner:
 
         rows = "\n".join(f"  {_json.dumps(a, sort_keys=True)}" for a in attempts)
         return f"\nATTEMPTS ALREADY MADE ON THIS PAYMENT IN THIS RUN\n{rows}\n"
+
+    async def compose(self, payment, customer, action) -> MessageDraft:
+        """Write the message for this case. A second call, deliberately.
+
+        Choosing an action and writing to a customer are different jobs with
+        different failure modes, and keeping them apart means a bad sentence
+        cannot corrupt a good decision -- the action is already made and
+        authorised before this runs.
+        """
+        from afin.domain.enums import RETRYABLE_CATEGORIES
+
+        prompt = COMPOSE_TEMPLATE.format(
+            amount=f"Rs {payment.amount_minor / 100:,.2f}",
+            invoice_id=payment.invoice_id,
+            failure_category=payment.failure_category.value,
+            failure_code=payment.failure_code,
+            risk_type=payment.risk_type.value,
+            instrument_reusable=payment.failure_category in RETRYABLE_CATEGORIES,
+            action=action.value,
+            retry_count=payment.retry_count,
+            segment=customer.segment,
+            lifetime_payments=customer.lifetime_payments,
+            prior_successful_payments=customer.prior_successful_payments,
+        )
+        messages = [Message("system", COMPOSE_SYSTEM), Message("user", prompt)]
+        opts = dict(self._options())
+        opts["response_format"] = MessageDraft
+        response = await self._client.get_response(messages, options=self._options_cls(**opts))
+        draft = getattr(response, "value", None)
+        if isinstance(draft, MessageDraft):
+            return draft
+        from afin.agent.schema import parse_message
+
+        return parse_message((response.text or "").strip())
 
     async def _pace(self) -> None:
         """Hold requests to the profile's minimum interval.

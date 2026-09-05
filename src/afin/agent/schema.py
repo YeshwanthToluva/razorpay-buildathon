@@ -98,3 +98,38 @@ def parse(raw: str, payment_id: str) -> ProposedAction:
         raise InvalidProposal(f"schema validation failed: {exc.error_count()} error(s)", raw)
     except ValueError as exc:
         raise InvalidProposal(f"unparseable model output: {exc}", raw)
+
+
+
+class MessageDraft(BaseModel):
+    """A message the agent composes for one specific customer and failure.
+
+    Structured rather than free prose so the parts can be checked and assembled
+    predictably, and so the model cannot smuggle markup or a second call to
+    action into the middle of a paragraph.
+    """
+
+    subject: str = Field(description="Under 70 characters. State the amount and the invoice.")
+    opening: str = Field(
+        description="One sentence: what could not be collected and why, in plain words."
+    )
+    explanation: str = Field(
+        description="One or two sentences tailored to THIS failure and THIS customer's "
+        "history. If their bank commonly declines a first attempt, or their card expired, "
+        "or they have paid reliably before, say so. Never invent facts you were not given."
+    )
+    tip: str = Field(
+        description="One practical sentence that makes the next payment more likely to "
+        "succeed. Empty string if you have nothing genuinely useful to add."
+    )
+    closing: str = Field(
+        description="One sentence inviting a reply if they have questions."
+    )
+    cta_label: str = Field(description="Button text, under 30 characters.")
+
+
+def parse_message(raw: str) -> MessageDraft:
+    try:
+        return MessageDraft.model_validate_json(raw)
+    except ValidationError as exc:
+        raise InvalidProposal(f"message draft failed validation: {exc.error_count()} error(s)", raw)

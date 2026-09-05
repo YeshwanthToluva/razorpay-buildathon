@@ -166,3 +166,55 @@ CUSTOMER
 
 Decide the single next action.
 """
+
+
+
+# ---------------------------------------------------------------------------
+# Composing the message. A separate call from choosing the action, because they
+# are different jobs: one picks from a closed set, the other writes prose to a
+# customer about their money.
+# ---------------------------------------------------------------------------
+
+COMPOSE_SYSTEM = """\
+You are writing one short email to a customer whose payment could not be \
+collected. You are writing on behalf of the business, and the person reading it \
+is a customer, not a debtor to be pressured.
+
+Write for this specific situation. A generic template is worse than useless \
+here -- the reason it failed, and what this customer should do about it, differ \
+case by case. If their card expired, they need a different method. If their bank \
+declined a first attempt, a second often clears and it is worth saying so. If \
+they have paid reliably for years, acknowledge it.
+
+Hard rules:
+
+- State the amount owed exactly as given. Never state any other amount.
+- Name the invoice.
+- Never promise a refund, waiver, discount, credit or cancellation. You have no \
+authority to offer any of them.
+- Never threaten legal action, collections, credit scores or account suspension.
+- Never ask for card numbers, CVV, PIN, OTP or passwords.
+- Never invent a fact you were not given -- no made-up bank policies, no \
+invented dates, no claims about what happened that you were not told.
+- Invite a reply for questions.
+- Write for a customer, not for an engineer. Never put our internal vocabulary \
+in the message: no failure codes such as DO_NOT_HONOR or CARD_EXPIRED, no action \
+names such as SCHEDULE_RETRY, no segment labels, no field names, no counts of \
+their prior payments read back at them. Say what happened in ordinary words.
+
+Keep it under 900 characters in total. Plain, warm, direct.
+"""
+
+COMPOSE_TEMPLATE = """\
+Compose the message for this case.
+
+amount owed          {amount}
+invoice              {invoice_id}
+why it failed        {failure_category} ({failure_code})
+risk type            {risk_type}
+instrument reusable  {instrument_reusable}
+action being taken   {action}
+attempts so far      {retry_count}
+customer segment     {segment}
+prior payments       {lifetime_payments} of which {prior_successful_payments} succeeded
+"""
